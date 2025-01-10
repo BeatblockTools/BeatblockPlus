@@ -1,0 +1,78 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 2147483647
+
+# mod loader
+[[patches]]
+[patches.copy]
+target = "main.lua"
+position = "append"
+sources = ["mod-loader/mod-loader.lua"]
+
+# load mods near the end of love.load()
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = '''bit = require "bit"'''
+position = "before"
+payload = '''loadMods()'''
+match_indent = true
+
+# mod menu
+[[patches]]
+[patches.copy]
+target = "states/Mods.lua"
+position = "prepend"
+sources = ["mod-loader/Mods.lua"]
+
+# register mod menu
+[[patches]]
+[patches.pattern]
+target = "preload/states.lua"
+pattern = '''bs.new('Keybinds')'''
+position = "after"
+payload = '''
+bs.new('Mods', "Mods/beatblock-plus/mod-loader/")
+'''
+match_indent = true
+
+# handle error in basestate.new()
+[[patches]]
+[patches.pattern]
+target = "lib/basestate.lua"
+pattern = '''
+function basestate.new(name)
+  basestate.states[name] = love.filesystem.load("states/" .. name .. ".lua") -- this is a bad idea
+  print("made state ".. name)
+end
+'''
+position = "at"
+payload = '''
+function basestate.new(name, dir)
+	local source = dir or "states/"
+  basestate.states[name], error = love.filesystem.load(source .. name .. ".lua")
+	if error then
+		print("couldn't load state " .. name .. ". Error: " .. error)
+	else
+  	print("made state " .. name)
+	end
+end
+'''
+match_indent = true
+
+# add menu button
+[[patches]]
+[patches.pattern]
+target = "states/Menu.lua"
+pattern = '''self.mainMenu:addOption('discordLink',function()'''
+position = "before"
+payload = '''
+		self.mainMenu:addOption('Mods', function()
+			cs = bs.load('Mods')
+			self.menuMusicManager:clearOnBeatHooks()
+			cs.menuMusicManager = self.menuMusicManager
+			cs:init()
+		end, 17*5)
+'''
+match_indent = true

@@ -1,0 +1,8 @@
+{
+	"id": "beatblock-plus",
+	"name": "Beatblock Plus",
+	"author": "erenkarakal",
+	"description": "Mod loader for Beatblock",
+	"version": "1.0.0",
+	"enabled": true
+}

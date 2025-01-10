@@ -1,0 +1,39 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 2147483647
+
+# Add huge warnings to crash logs so people don't report bugs with a modded game.
+
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = '''local message = loc.get('crashBody')'''
+position = "at"
+payload = '''
+local message = [[
+Beatblock crashed :(
+Would you like to create a crash log?
+
+████████████████████████████████████████
+███ DO NOT CONTACT OFFICIAL DEVELOPERS. YOUR GAME IS MODDED.  ███
+███ DO NOT CONTACT OFFICIAL DEVELOPERS. YOUR GAME IS MODDED.  ███
+███ DO NOT CONTACT OFFICIAL DEVELOPERS. YOUR GAME IS MODDED.  ███
+███ DO NOT CONTACT OFFICIAL DEVELOPERS. YOUR GAME IS MODDED.  ███
+███ DO NOT CONTACT OFFICIAL DEVELOPERS. YOUR GAME IS MODDED.  ███
+████████████████████████████████████████
+
+You can also try removing your mods one by one to find out which mod is causing the crash.
+]]
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = '''local procCount = love.system.getProcessorCount()'''
+position = "before"
+payload = '''
+issuebody = "!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!\n Mod list: " .. getModNames() .. "\n!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!\n" .. issuebody
+'''
+match_indent = true
