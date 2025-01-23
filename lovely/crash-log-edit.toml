@@ -3,8 +3,35 @@ version = "1.0.0"
 dump_lua = true
 priority = 2147483647
 
-# Add huge warnings to crash logs so people don't report bugs with a modded game.
+# fix a bug that can let mods to crash the game without showing a crash log
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = "function love.errhand(error_message)"
+position = "after"
+payload = '''
+if not loc then
+	loc = {
+		get = function(a,b)
+			return a
+		end
+	}
+end
 
+if not inspectVar then
+	inspectVar = require "lib.inspect"
+end
+
+if not getModNames then
+	function getModNames()
+		return "Game crashed before mods could load"
+	end
+end
+'''
+match_indent = true
+times = 1
+
+# add huge warnings to crash logs so people don't report bugs with a modded game.
 [[patches]]
 [patches.pattern]
 target = "main.lua"
@@ -26,7 +53,7 @@ Would you like to create a crash log?
 You can also try removing your mods one by one to find out which mod is causing the crash.
 ]]
 '''
-match_indent = true
+match_indent = false
 
 [[patches]]
 [patches.pattern]
@@ -34,6 +61,6 @@ target = "main.lua"
 pattern = '''local procCount = love.system.getProcessorCount()'''
 position = "before"
 payload = '''
-issuebody = "!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!\n Mod list: " .. getModNames() .. "\n!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!\n" .. issuebody
+issuebody = "!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!\n Mod list: " .. getModNames() .. "\n!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!\n\n" .. issuebody
 '''
-match_indent = true
+match_indent = false

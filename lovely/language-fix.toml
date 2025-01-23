@@ -7,9 +7,7 @@ priority = 2147483647
 [[patches]]
 [patches.pattern]
 target = "lib/loc.lua"
-pattern = '''local outstr = loc.lang .. "."..s'''
+pattern = "local outstr = loc.lang .. \".\"..s"
 position = "at"
-payload = '''
-local outstr = s
-'''
+payload = "local outstr = s"
 match_indent = true

@@ -1,0 +1,48 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 2147483647
+
+# holder for paths
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = "function love.load()"
+position = "after"
+payload = "customEvents = {}"
+match_indent = true
+
+# mods aren't registered yet so we do an ugly workaround
+[[patches]]
+[patches.pattern]
+target = "obj/GameManager.lua"
+pattern = "findFiles('levelformat/events')"
+position = "after"
+payload = '''
+for _, modFolder in ipairs(love.filesystem.getDirectoryItems("Mods")) do
+	local modPath = "Mods/" .. modFolder
+	if love.filesystem.getInfo(modPath, 'directory') then
+		local eventsPath = modPath .. "/events/"
+		if love.filesystem.getInfo(eventsPath, 'directory') then
+			findFiles(eventsPath)
+			table.insert(customEvents, eventsPath)
+			print("[BB+] Finding events inside " .. eventsPath)
+		end
+	end
+end
+'''
+match_indent = true
+
+# add the custom stuff to the editor palette whenever the editor is opened
+[[patches]]
+[patches.pattern]
+target = "states/Editor.lua"
+pattern = "self.eventPalette = palette"
+position = "before"
+payload = '''
+for _, path in ipairs(customEvents) do
+	palette = self:paletteFromFolder(palette, path)
+end
+'''
+match_indent = true
+times = 1

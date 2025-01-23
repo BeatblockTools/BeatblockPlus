@@ -61,7 +61,7 @@ local function drawModPage(page)
 		y = y + boxHeight + paddingBetweenEachMod
 	end
 
-	-- print footer
+	-- -- print footer
 	local footer = "     Page " .. page .. "     "
 
 	-- decide whether it should show the next page button
