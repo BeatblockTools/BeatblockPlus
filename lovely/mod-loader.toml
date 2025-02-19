@@ -46,14 +46,40 @@ match_indent = true
 [[patches]]
 [patches.pattern]
 target = "states/Menu.lua"
-pattern = "self.mainMenu:addOption('discordLink',function()"
-position = "before"
+pattern = "self.mainMenu:setSelection(1)"
+position = "after"
 payload = '''
-self.mainMenu:addOption('Mods', function()
+self.modMenu = em.init('OptionsList', { allowInput = true, x = 30, y = 234 })
+
+self.modMenu:addOption('Mods', function()
 	cs = bs.load('Mods')
 	self.menuMusicManager:clearOnBeatHooks()
 	cs.menuMusicManager = self.menuMusicManager
 	cs:init()
 end, 17*5)
+
+self.modMenu:setSelection(1)
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "states/Menu.lua"
+pattern = "st:setUpdate(function(self,dt)"
+position = "after"
+payload = '''
+if self.modMenu then
+	self.modMenu:update()
+end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "states/Menu.lua"
+pattern = "self.mainMenu:draw(0 + self.x * project.res.cx, 200)"
+position = "after"
+payload = '''
+self.modMenu:draw(-270 + self.x * project.res.cx, 234)
 '''
 match_indent = true
