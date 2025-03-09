@@ -54,7 +54,7 @@ self.mainMenu:addOption('Mods', function()
 	self.menuMusicManager:clearOnBeatHooks()
 	cs.menuMusicManager = self.menuMusicManager
 	cs:init()
-end, 17*(2+marathonOffset))
+end, 17 * 3)
 
 for i = 1, 4 do
 	self.mainMenu.options.main[i].y = self.mainMenu.options.main[i].y - 17
