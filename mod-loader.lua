@@ -65,23 +65,21 @@ end
 local function mergeLangFiles(originalLoc, modLoc)
 	local selectedLanguage = savedata.options.language
 	for key, value in pairs(modLoc) do
-			print(originalLoc[key][selectedLanguage])
 			originalLoc[key][selectedLanguage] = value
-			print("setting original." .. key .. "." .. selectedLanguage .. " to " .. value)
 	end
 end
 
 function tableContains(t, v)
-  for i = 1, #t do
-    if (t[i] == v) then
-      return true
-    end
-  end
-  return false
+	for i = 1, #t do
+		if (t[i] == v) then
+			return true
+		end
+	end
+	return false
 end
 
 local function getParent(fullPath)
-  return fullPath:match("(.*/)") or "."
+	return fullPath:match("(.*/)") or "."
 end
 
 function string:endswith(ending)
@@ -190,7 +188,7 @@ function loadMods() -- loads mod data, assets, mod icons etc.
 				end
 			end
 		end
-	  ::continue::
+		::continue::
 	end
 
 	print("[BB+] Finished loading all mods! :D")
