@@ -1,0 +1,42 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 2147483647
+
+# fix 'en' appearing before text
+[[patches]]
+[patches.pattern]
+target = "lib/loc.lua"
+pattern = "local outstr = loc.lang .. \".\"..s"
+position = "at"
+payload = "local outstr = s"
+match_indent = true
+
+# add custom languages to the language list
+[[patches]]
+[patches.pattern]
+target = "states/Menu.lua"
+pattern = "langOption.languageIndex = 0"
+position = "before"
+payload = '''
+for _, language in ipairs(customLanguages) do
+  if not tableContains(langOption.languages, language) then
+		table.insert(langOption.languages, language)
+	end
+end
+'''
+match_indent = true
+
+
+# add custom languages to the language list
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = "function love.load()"
+position = "before"
+payload = '''
+
+customLanguages = {}
+
+'''
+match_indent = true

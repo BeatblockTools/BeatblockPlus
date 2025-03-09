@@ -12,8 +12,18 @@ local function registerMod(modData)
 	local author = modData.author or "Unknown"
 	local description = modData.description or ""
 	local version = modData.version or "1.0.0"
+	local enabled = modData.enabled
+	local config = modData.config or {}
 
-	table.insert(mods, { id = id, name = name, author = author, description = description, version = version })
+	table.insert(mods, {
+		id = id,
+		name = name,
+		author = author,
+		description = description,
+		version = version,
+		enabled = enabled,
+		config = config
+	})
 	print("[BB+] Registered mod '" .. name .. "' by " .. author .. ".")
 end
 
@@ -50,6 +60,24 @@ local function printTable(t, indent, title)
 			print(indentStr .. tostring(k) .. ": " .. tostring(v))
 		end
 	end
+end
+
+local function mergeLangFiles(originalLoc, modLoc)
+	local selectedLanguage = savedata.options.language
+	for key, value in pairs(modLoc) do
+			print(originalLoc[key][selectedLanguage])
+			originalLoc[key][selectedLanguage] = value
+			print("setting original." .. key .. "." .. selectedLanguage .. " to " .. value)
+	end
+end
+
+function tableContains(t, v)
+  for i = 1, #t do
+    if (t[i] == v) then
+      return true
+    end
+  end
+  return false
 end
 
 local function getParent(fullPath)
@@ -90,6 +118,10 @@ function loadMods() -- loads mod data, assets, mod icons etc.
 				end
 			end
 
+			if modData ~= nil and not modData.enabled then
+				goto continue
+			end
+
 			-- load assets
 			local assetsPath = modPath .. "/assets"
 			if love.filesystem.getInfo(assetsPath, 'directory') then
@@ -122,6 +154,17 @@ function loadMods() -- loads mod data, assets, mod icons etc.
 						tbl[fileName] = ez.newjson(path, data)
 					end
 				end)
+
+				loopFiles(loc.json, assetsPath .. "/lang", function(tbl, path, fileName)
+					table.insert(customLanguages, fileName)
+					-- make sure we don't load english lang when owo is selected
+					if fileName == savedata.options.language then
+						print("[BB+] injecting lang file " .. path .. "...")
+						local modLoc = dpf.loadJson(path, {})
+						mergeLangFiles(loc.json, modLoc)
+					end
+				end)
+
 			end
 
 			-- load states
@@ -147,6 +190,7 @@ function loadMods() -- loads mod data, assets, mod icons etc.
 				end
 			end
 		end
+	  ::continue::
 	end
 
 	print("[BB+] Finished loading all mods! :D")
@@ -157,12 +201,12 @@ function loadMods() -- loads mod data, assets, mod icons etc.
 	printTable(modIcons, 3, "Mod icons:")
 end
 
-function getModNames() -- format: mod1, mod2, mod3
+function getModNames()
 	local modNames = {}
 
 	for _, mod in ipairs(mods) do
-		table.insert(modNames, mod.name)
+		table.insert(modNames, "  - " .. mod.name .. " (" .. mod.version .. ") by " .. mod.author)
 	end
 
-	return table.concat(modNames, ", ")
+	return table.concat(modNames, "\n")
 end

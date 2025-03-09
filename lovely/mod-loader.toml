@@ -13,7 +13,7 @@ sources = ["mod-loader.lua"]
 [[patches]]
 [patches.pattern]
 target = "main.lua"
-pattern = "bit = require \"bit\""
+pattern = "cs = bs.load(project.initState)"
 position = "before"
 payload = "loadMods()"
 match_indent = true
@@ -46,40 +46,18 @@ match_indent = true
 [[patches]]
 [patches.pattern]
 target = "states/Menu.lua"
-pattern = "self.mainMenu:setSelection(1)"
-position = "after"
+pattern = "self.mainMenu:addOption('credits',function()"
+position = "before"
 payload = '''
-self.modMenu = em.init('OptionsList', { allowInput = true, x = 30, y = 234 })
-
-self.modMenu:addOption('Mods', function()
+self.mainMenu:addOption('Mods', function()
 	cs = bs.load('Mods')
 	self.menuMusicManager:clearOnBeatHooks()
 	cs.menuMusicManager = self.menuMusicManager
 	cs:init()
-end, 17*5)
+end, 17*(2+marathonOffset))
 
-self.modMenu:setSelection(1)
-'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = "states/Menu.lua"
-pattern = "st:setUpdate(function(self,dt)"
-position = "after"
-payload = '''
-if self.modMenu then
-	self.modMenu:update()
+for i = 1, 4 do
+	self.mainMenu.options.main[i].y = self.mainMenu.options.main[i].y - 17
 end
-'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = "states/Menu.lua"
-pattern = "self.mainMenu:draw(0 + self.x * project.res.cx, 200)"
-position = "after"
-payload = '''
-self.modMenu:draw(-270 + self.x * project.res.cx, 234)
 '''
 match_indent = true

@@ -3,7 +3,7 @@ version = "1.0.0"
 dump_lua = true
 priority = 2147483647
 
-# fix a bug that can let mods to crash the game without showing a crash log
+# fix a bug that lets mods crash the game without showing a crash log
 [[patches]]
 [patches.pattern]
 target = "main.lua"
@@ -22,7 +22,7 @@ if not inspectVar then
 	inspectVar = require "lib.inspect"
 end
 
-if not getModNames then
+if not getModNames or #mods == 0 then
 	function getModNames()
 		return "Game crashed before mods could load"
 	end
@@ -61,6 +61,6 @@ target = "main.lua"
 pattern = '''local procCount = love.system.getProcessorCount()'''
 position = "before"
 payload = '''
-issuebody = "!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!\n Mod list: " .. getModNames() .. "\n!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!\n\n" .. issuebody
+issuebody = "!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!\n Mod list: \n" .. getModNames() .. "\n!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!\n\n" .. issuebody
 '''
 match_indent = false
