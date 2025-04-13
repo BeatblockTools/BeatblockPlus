@@ -7,24 +7,17 @@ local function readJsonFromFile(filePath)
 end
 
 local function registerMod(modData)
-	local id = modData.id
-	local name = modData.name or "Unknown"
-	local author = modData.author or "Unknown"
-	local description = modData.description or ""
-	local version = modData.version or "1.0.0"
-	local enabled = modData.enabled
-	local config = modData.config or {}
-
-	table.insert(mods, {
-		id = id,
-		name = name,
-		author = author,
-		description = description,
-		version = version,
-		enabled = enabled,
-		config = config
-	})
-	print("[BB+] Registered mod '" .. name .. "' by " .. author .. ".")
+	local mod = {
+		id = modData.id,
+		name = modData.name or "Unknown",
+		author = modData.author or "Unknown",
+		description = modData.description or "",
+		version = modData.version or "1.0.0",
+		enabled = modData.enabled,
+		config = modData.config or {}
+	}
+	mods[mod.id] = mod
+	print("[BB+] Registered mod '" .. mod.name .. "' by " .. mod.author .. ".")
 end
 
 -- files.walk implementation
@@ -65,7 +58,10 @@ end
 local function mergeLangFiles(originalLoc, modLoc)
 	local selectedLanguage = savedata.options.language
 	for key, value in pairs(modLoc) do
-			originalLoc[key][selectedLanguage] = value
+		if not originalLoc[key] then
+			originalLoc[key] = {}
+		end
+		originalLoc[key][selectedLanguage] = value
 	end
 end
 
@@ -83,7 +79,7 @@ local function getParent(fullPath)
 end
 
 function string:endswith(ending)
-	return ending == "" or self:sub(-#ending) == ending
+	return ending == "" or self:sub(- #ending) == ending
 end
 
 function loadMods() -- loads mod data, assets, mod icons etc.
@@ -162,7 +158,6 @@ function loadMods() -- loads mod data, assets, mod icons etc.
 						mergeLangFiles(loc.json, modLoc)
 					end
 				end)
-
 			end
 
 			-- load states
@@ -202,7 +197,7 @@ end
 function getModNames()
 	local modNames = {}
 
-	for _, mod in ipairs(mods) do
+	for _, mod in pairs(mods) do
 		table.insert(modNames, "  - " .. mod.name .. " (" .. mod.version .. ") by " .. mod.author)
 	end
 

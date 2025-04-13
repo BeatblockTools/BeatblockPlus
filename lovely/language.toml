@@ -27,8 +27,6 @@ end
 '''
 match_indent = true
 
-
-# add custom languages to the language list
 [[patches]]
 [patches.pattern]
 target = "main.lua"

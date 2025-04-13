@@ -2,8 +2,13 @@ local st = Gamestate:new('Mods')
 local selectedModPage = 1
 local modsPerPage = 8
 local configToRender = nil
+local modIndices = {}
 
 local buttons = {}
+
+local function playClickSound()
+	te.play(sounds.hold, 'static', 'sfx', 0.3)
+end
 
 local function addButton(x, y, width, height, callback)
 	local button = {
@@ -11,15 +16,16 @@ local function addButton(x, y, width, height, callback)
 		y1 = y,
 		x2 = x + width,
 		y2 = y + height,
-		callback = callback
+		callback = function()
+			playClickSound()
+			callback()
+		end
 	}
 	table.insert(buttons, button)
 end
 
 local function isMouseOverButton(button)
-	local scale = savedata.options.graphics.windowScale
-	local mouseX, mouseY = love.mouse.getX() / scale, love.mouse.getY() / scale
-	return mouseX >= button.x1 and mouseX <= button.x2 and mouseY >= button.y1 and mouseY <= button.y2
+	return mouse.rx >= button.x1 and mouse.rx <= button.x2 and mouse.ry >= button.y1 and mouse.ry <= button.y2
 end
 
 local function moveDirectory(source, target)
@@ -63,7 +69,6 @@ local function renderModConfig(mod)
 				moveDirectory(modPath, disabledPath)
 			end
 		end
-
 	end
 
 	local function renderConfig(config)
@@ -89,7 +94,7 @@ local function renderModConfig(mod)
 	if love.filesystem.getInfo(configPath) then
 		local chunk, errormsg = love.filesystem.load(configPath)
 		if errormsg then
-			print("Error while loading the config renderer of " .. mod.name .. ". " .. errormsg)
+			print("[BB+] Error while loading the config renderer of " .. mod.name .. ". " .. errormsg)
 		else
 			local env = setmetatable({ mod = mod }, { __index = _G })
 			setfenv(chunk, env)()
@@ -129,12 +134,12 @@ end
 
 local function drawModPage(page)
 	-- print title
-	printCenteredText("Mods (" .. #mods .. ")", 1)
+	printCenteredText("Mods (" .. #modIndices .. ")", 1)
 	love.graphics.line(0, 18, 600, 18)
 
 	-- print mods
 	local startIndex = (page - 1) * modsPerPage + 1
-	local endIndex = math.min(startIndex + modsPerPage - 1, #mods)
+	local endIndex = math.min(startIndex + modsPerPage - 1, #modIndices)
 
 	local modListTopPadding = 26
 	local paddingBetweenEachMod = 5
@@ -148,21 +153,24 @@ local function drawModPage(page)
 	buttons = {}
 
 	for i = startIndex, endIndex do
-		local mod = mods[i]
+		local mod = mods[modIndices[i]]
+
+		-- if the mod is disabled, put a red tint in the background
+		if not mod.enabled then
+			love.graphics.setColor(1, 0, 0, 0.1)
+			love.graphics.rectangle('fill', 25, y, boxWidth, boxHeight)
+		end
 
 		-- draw a hollow box around the mod info
-		love.graphics.rectangle("line", 25, y, boxWidth, boxHeight)
+		color(1) -- black
+		love.graphics.rectangle('line', 25, y, boxWidth, boxHeight)
 
 		-- draw config button
-		love.graphics.rectangle("line", 559, y, 16, 16)
+		love.graphics.rectangle('line', 559, y, 16, 16)
 		addButton(559, y, 16, 16, function()
-			local width, height = love.graphics.getDimensions()
 			local window_width, window_height = 500, 500
-			local x = width / 2 - window_width / 2
-			local y = height / 2 - window_height / 2
-
-			local window_flags = 256 -- NoSavedSettings
-			helpers.SetNextWindowPos(x, y, window_flags)
+			local window_flags = 16 -- NoSavedSettings
+			helpers.SetNextWindowPos(15, 15, window_flags)
 			helpers.SetNextWindowSize(window_width, window_height, window_flags)
 			configToRender = mod
 		end)
@@ -185,24 +193,43 @@ local function drawModPage(page)
 		y = y + boxHeight + paddingBetweenEachMod
 	end
 
-	-- -- print footer
-	local footer = "     Page " .. page .. "     "
+	-- print footer
+	printCenteredText("Page " .. page, 343)
 
-	-- decide whether it should show the next page button
-	if modsPerPage * page < #mods then
-		footer = footer .. "[>]"
+	-- decide whether to show the next page button
+	local arrowWidth = love.graphics.getFont():getWidth("[>]")
+	local arrowHeight = love.graphics.getFont():getHeight()
+
+	if modsPerPage * page < #modIndices then
+		love.graphics.print("[>]", 357, 343)
+		addButton(357, 343, arrowWidth, arrowHeight, function()
+			selectedModPage = selectedModPage + 1
+		end)
 	end
-	-- decide whether it should show the previous page button
+
+	-- decide whether to show the previous page button
 	if page > 1 then
-		footer = "[<]" .. footer
+		love.graphics.print("[<]", 228, 343)
+		addButton(228, 343, arrowWidth, arrowHeight, function()
+
+			selectedModPage = selectedModPage - 1
+		end)
 	end
 
-	printCenteredText(footer, 343)
+	-- draw horizontal line above footer
 	love.graphics.line(0, 342, 600, 342)
 end
 
 st:setInit(function(self)
 	shuv.usePalette = false
+
+	local i = 0
+	modIndices = {}
+
+	for modId, _ in pairs(mods) do
+		i = i + 1
+		modIndices[i] = modId
+	end
 end)
 
 st:setUpdate(
@@ -215,16 +242,19 @@ st:setUpdate(
 			end
 		end
 		if maininput:pressed('menu_right') then
-			if modsPerPage * selectedModPage < #mods then
+			playClickSound()
+			if modsPerPage * selectedModPage < #modIndices then
 				selectedModPage = selectedModPage + 1
 				drawModPage(selectedModPage)
 			end
 		elseif maininput:pressed('menu_left') then
+			playClickSound()
 			if selectedModPage > 1 then
 				selectedModPage = selectedModPage - 1
 				drawModPage(selectedModPage)
 			end
 		elseif maininput:pressed('back') then
+			playClickSound()
 			cs = bs.load('Menu')
 			self.menuMusicManager:clearOnBeatHooks()
 			cs.menuMusicManager = self.menuMusicManager

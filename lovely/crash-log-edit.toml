@@ -10,6 +10,10 @@ target = "main.lua"
 pattern = "function love.errhand(error_message)"
 position = "after"
 payload = '''
+if love.graphics.getCanvas() then
+  love.graphics.setCanvas()
+end
+
 if not loc then
 	loc = {
 		get = function(a,b)
@@ -42,13 +46,13 @@ local message = [[
 Beatblock crashed :(
 Would you like to create a crash log?
 
-████████████████████████████████████████
-███ DO NOT CONTACT OFFICIAL DEVELOPERS. YOUR GAME IS MODDED.  ███
-███ DO NOT CONTACT OFFICIAL DEVELOPERS. YOUR GAME IS MODDED.  ███
-███ DO NOT CONTACT OFFICIAL DEVELOPERS. YOUR GAME IS MODDED.  ███
-███ DO NOT CONTACT OFFICIAL DEVELOPERS. YOUR GAME IS MODDED.  ███
-███ DO NOT CONTACT OFFICIAL DEVELOPERS. YOUR GAME IS MODDED.  ███
-████████████████████████████████████████
+█████████████████████████████████████████
+███ DO NOT CONTACT BEATBLOCK DEVELOPERS. YOUR GAME IS MODDED. ███
+███ DO NOT CONTACT BEATBLOCK DEVELOPERS. YOUR GAME IS MODDED. ███
+███ DO NOT CONTACT BEATBLOCK DEVELOPERS. YOUR GAME IS MODDED. ███
+███ DO NOT CONTACT BEATBLOCK DEVELOPERS. YOUR GAME IS MODDED. ███
+███ DO NOT CONTACT BEATBLOCK DEVELOPERS. YOUR GAME IS MODDED. ███
+█████████████████████████████████████████
 
 You can also try removing your mods one by one to find out which mod is causing the crash.
 ]]
