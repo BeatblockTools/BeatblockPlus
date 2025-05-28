@@ -112,6 +112,10 @@ local function renderModConfig(mod)
 end
 
 local function truncateText(inputText, maxWidth)
+	local beforeNewline = inputText:match("^(.-)\n")
+    if beforeNewline then
+        inputText = beforeNewline
+	end
 	if love.graphics.getFont():getWidth(inputText) <= maxWidth then
 		return inputText
 	end
