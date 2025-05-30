@@ -234,6 +234,10 @@ st:setInit(function(self)
 		i = i + 1
 		modIndices[i] = modId
 	end
+
+	table.sort(modIndices, function(a, b)
+		return a:lower() < b:lower()
+	end)
 end)
 
 st:setUpdate(
