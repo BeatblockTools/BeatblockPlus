@@ -125,7 +125,7 @@ st:setBgDraw(function(self)
 	love.graphics.rectangle('fill', 0, 0, 600, 360)
 end)
 
-local windowScale = shuv.scale
+local windowScale = 2
 local windowWidth = 600 * windowScale
 local windowHeight = 360 * windowScale
 
