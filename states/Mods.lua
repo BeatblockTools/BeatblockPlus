@@ -49,7 +49,7 @@ local function loadConfigRenderer(mod, path)
 		print("[BB+] Error while loading the config renderer of " .. mod.name .. ". " .. errormsg)
 	else
 		local env = setmetatable({ mod = mod }, { __index = _G })
-		mod.configRenderer = setfenv(chunk, env)
+		return setfenv(chunk, env)
 	end
 end
 
@@ -111,7 +111,13 @@ st:setInit(function(self)
 end)
 
 st:setUpdate(function(self, dt)
-
+	if maininput:pressed("r") then
+		local mod = mods[self.selectedModId]
+		if mod.configRenderer then
+			local configPath = "Mods/" .. mod.id .. "/config.lua"
+			mod.configRenderer = loadConfigRenderer(mod, configPath)
+		end
+	end
 end)
 
 st:setBgDraw(function(self)
