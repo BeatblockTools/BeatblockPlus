@@ -108,6 +108,17 @@ end
 
 st:setInit(function(self)
 	self.selectedModId = "beatblock-plus"
+
+	self.sortedIDs = {}
+	local i = 0
+	for modID, _ in pairs(mods) do
+		i = i + 1
+		self.sortedIDs[i] = modID
+	end
+	-- the list contains ids, but they're sorted by name 
+	table.sort(self.sortedIDs, function(a, b)
+		return mods[a].name:lower() < mods[b].name:lower()
+	end)
 end)
 
 st:setUpdate(function(self, dt)
@@ -148,29 +159,28 @@ st:setFgDraw(function(self)
 	-- start drawing mod boxes
 	imgui.BeginChild_Str("mod_list", imgui.ImVec2_Float(550 * windowScale, 320 * windowScale), 0)
 
-
-	for modId, mod in pairs(mods) do
+	for _, modID in pairs(self.sortedIDs) do
 		local childWidth = windowWidth * 0.69
 		local childHeight = 42 * windowScale -- just enough to fit the mod icon
-		imgui.BeginChild_Str("mod_" .. modId, imgui.ImVec2_Float(childWidth, childHeight), 1)
+		imgui.BeginChild_Str("mod_" .. mods[modID].id, imgui.ImVec2_Float(childWidth, childHeight), 1)
 
-		imgui.Columns(2, "mod_details_" .. modId, true)
+		imgui.Columns(2, "mod_details_" .. mods[modID].id, true)
 
 		-- mod icon
 		imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth / 5)
 		local imageSizeX = 77 * windowScale
 		local imageSizeY = 33 * windowScale
-		imgui.Image((modIcons[modId] or modIcons.unknown), imgui.ImVec2_Float(imageSizeX, imageSizeY))
+		imgui.Image((modIcons[mods[modID].id] or modIcons.unknown), imgui.ImVec2_Float(imageSizeX, imageSizeY))
 		imgui.NextColumn()
 
 		-- mod details (name, icon, version, etc.)
 		imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth)
-		imgui.Text(mod.name .. " by " .. mod.author .. " (" .. mod.version .. ")")
-		imgui.TextWrapped(mod.description)
+		imgui.Text(mods[modID].name .. " by " .. mods[modID].author .. " (" .. mods[modID].version .. ")")
+		imgui.TextWrapped(mods[modID].description)
 
 		-- show config when clicked
 		if imgui.IsWindowHovered() and imgui.IsMouseClicked(0) then -- left click
-			self.selectedModId = mod.id
+			self.selectedModId = mods[modID].id
 		end
 
 		imgui.EndChild() -- end mod box
