@@ -154,20 +154,20 @@ st:setFgDraw(function(self)
 	imgui.BeginChild_Str("mod_list_and_config", imgui.ImVec2_Float(windowWidth, 320 * windowScale), 0)
 
 	imgui.Columns(2, "main", true)
-	imgui.SetColumnWidth(imgui.GetColumnIndex(), windowWidth * 0.7)
+	imgui.SetColumnWidth(imgui.GetColumnIndex(), windowWidth * 0.6)
 
 	-- start drawing mod boxes
 	imgui.BeginChild_Str("mod_list", imgui.ImVec2_Float(550 * windowScale, 320 * windowScale), 0)
 
 	for _, modID in pairs(self.sortedIDs) do
-		local childWidth = windowWidth * 0.69
+		local childWidth = windowWidth * 0.59
 		local childHeight = 42 * windowScale -- just enough to fit the mod icon
 		imgui.BeginChild_Str("mod_" .. mods[modID].id, imgui.ImVec2_Float(childWidth, childHeight), 1)
 
 		imgui.Columns(2, "mod_details_" .. mods[modID].id, true)
 
 		-- mod icon
-		imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth / 5)
+		imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth * 0.227)
 		local imageSizeX = 73 * windowScale
 		local imageSizeY = 33 * windowScale
 		imgui.Image((modIcons[mods[modID].id] or modIcons.unknown), imgui.ImVec2_Float(imageSizeX, imageSizeY))
@@ -189,7 +189,7 @@ st:setFgDraw(function(self)
 	imgui.EndChild() -- end mod list
 
 	imgui.NextColumn()
-	imgui.SetColumnWidth(imgui.GetColumnIndex(), windowWidth * 0.3)
+	imgui.SetColumnWidth(imgui.GetColumnIndex(), windowWidth * 0.39)
 
 	-- start a new child for config because imgui likes to break everything otherwise
 	imgui.BeginChild_Str("mod_config_" .. self.selectedModId, imgui.ImVec2_Float(0, 0), false)
