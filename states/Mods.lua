@@ -160,27 +160,28 @@ st:setFgDraw(function(self)
 	imgui.BeginChild_Str("mod_list", imgui.ImVec2_Float(550 * windowScale, 320 * windowScale), 0)
 
 	for _, modID in pairs(self.sortedIDs) do
+		local mod = mods[modID]
 		local childWidth = windowWidth * 0.59
 		local childHeight = 42 * windowScale -- just enough to fit the mod icon
-		imgui.BeginChild_Str("mod_" .. mods[modID].id, imgui.ImVec2_Float(childWidth, childHeight), 1)
+		imgui.BeginChild_Str("mod_" .. mod.id, imgui.ImVec2_Float(childWidth, childHeight), 1)
 
-		imgui.Columns(2, "mod_details_" .. mods[modID].id, true)
+		imgui.Columns(2, "mod_details_" .. mod.id, true)
 
 		-- mod icon
 		imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth * 0.227)
 		local imageSizeX = 73 * windowScale
 		local imageSizeY = 33 * windowScale
-		imgui.Image((modIcons[mods[modID].id] or modIcons.unknown), imgui.ImVec2_Float(imageSizeX, imageSizeY))
+		imgui.Image((modIcons[mod.id] or modIcons.unknown), imgui.ImVec2_Float(imageSizeX, imageSizeY))
 		imgui.NextColumn()
 
 		-- mod details (name, icon, version, etc.)
 		imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth)
-		imgui.Text(mods[modID].name .. " by " .. mods[modID].author .. " (" .. mods[modID].version .. ")")
-		imgui.TextWrapped(mods[modID].description)
+		imgui.Text(mod.name .. " by " .. mod.author .. " (" .. mod.version .. ")")
+		imgui.TextWrapped(mod.description)
 
 		-- show config when clicked
 		if imgui.IsWindowHovered() and imgui.IsMouseClicked(0) then -- left click
-			self.selectedModId = mods[modID].id
+			self.selectedModId = mod.id
 		end
 
 		imgui.EndChild() -- end mod box
