@@ -115,6 +115,13 @@ local function countTable(tbl)
 	return count
 end
 
+st.loadMainMenu = function(self)
+	cs = bs.load('Menu')
+	self.menuMusicManager:clearOnBeatHooks()
+	cs.menuMusicManager = self.menuMusicManager
+	cs:init()
+end
+
 st:setInit(function(self)
 	self.selectedModId = "beatblock-plus"
 
@@ -137,6 +144,9 @@ st:setUpdate(function(self, dt)
 			local configPath = "Mods/" .. mod.id .. "/config.lua"
 			mod.configRenderer = loadConfigRenderer(mod, configPath)
 		end
+
+	elseif maininput:pressed("back") then
+		self.loadMainMenu(self)
 	end
 end)
 
@@ -210,10 +220,7 @@ st:setFgDraw(function(self)
 	imgui.Separator()
 
 	if imgui.Button("Go Back") then
-		cs = bs.load('Menu')
-		self.menuMusicManager:clearOnBeatHooks()
-		cs.menuMusicManager = self.menuMusicManager
-		cs:init()
+		loadMainMenu(self)
 	end
 
 	imgui.End()
