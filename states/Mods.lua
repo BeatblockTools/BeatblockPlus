@@ -91,7 +91,16 @@ local function renderModConfig(mod)
 	end
 
 	if imgui.Button("Save Changes") then
-		dpf.saveJson("Mods/" .. mod.id .. "/mod.json", mod)
+		local modData = {
+			id = mod.id,
+			name = mod.name,
+			author = mod.author,
+			description = mod.description,
+			version = mod.version,
+			enabled = mod.enabled,
+			config = mod.config
+		}
+		dpf.saveJson("Mods/" .. mod.id .. "/mod.json", modData)
 	end
 end
 
@@ -115,7 +124,7 @@ st:setInit(function(self)
 		i = i + 1
 		self.sortedIDs[i] = modID
 	end
-	-- the list contains ids, but they're sorted by name 
+	-- the list contains ids, but they're sorted by name
 	table.sort(self.sortedIDs, function(a, b)
 		return mods[a].name:lower() < mods[b].name:lower()
 	end)
