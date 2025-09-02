@@ -220,7 +220,7 @@ st:setFgDraw(function(self)
 	imgui.Separator()
 
 	if imgui.Button("Go Back") then
-		loadMainMenu(self)
+		self.loadMainMenu(self)
 	end
 
 	imgui.End()
