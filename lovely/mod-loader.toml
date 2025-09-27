@@ -18,20 +18,26 @@ position = "before"
 payload = "loadMods()"
 match_indent = true
 
-# handle error and allow custom path in basestate.new()
+# handle error and allow custom path
 [[patches]]
 [patches.pattern]
 target = "lib/basestate.lua"
 pattern = '''
-function basestate.new(name)
-  basestate.states[name] = love.filesystem.load("states/" .. name .. ".lua") -- this is a bad idea
+function basestate.new(filename,name)
+  name = name or filename
+  basestate.states[name] = love.filesystem.load("states/" .. filename .. ".lua") -- this is a bad idea  
   print("made state ".. name)
 end
 '''
 position = "at"
 payload = '''
-function basestate.new(name, dir)
-	local source = dir or ("states/" .. name .. ".lua")
+function basestate.new(filename, name)
+	name = name or filename
+	basestate.fromPath(name, "states/" .. filename .. ".lua")
+end
+
+function basestate.fromPath(name, path)
+	local source = path or ("states/" .. name .. ".lua")
 	basestate.states[name], error = love.filesystem.load(source)
 	if error then
 		print("[BB+] couldn't load state " .. name .. ". Error: " .. error)
@@ -54,7 +60,7 @@ self.mainMenu:addOption('Mods', function()
 	self.menuMusicManager:clearOnBeatHooks()
 	cs.menuMusicManager = self.menuMusicManager
 	cs:init()
-end, 17 * 3)
+end, 17 * 3, nil, sprites.menu.mods)
 
 for i = 1, 4 do
 	self.mainMenu.options.main[i].y = self.mainMenu.options.main[i].y - 17

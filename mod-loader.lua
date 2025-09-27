@@ -163,7 +163,7 @@ function loadMods() -- loads mod data, assets, mod icons etc.
 			-- load states
 			loopFiles({}, modPath .. "/states", function(_, path, fileName)
 				print("[BB+] injecting state " .. path .. "...")
-				bs.new(fileName, path)
+				bs.fromPath(fileName, path)
 			end)
 
 			-- load entities
