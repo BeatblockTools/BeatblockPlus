@@ -300,6 +300,12 @@ st:setFgDraw(function(self)
 		self.loadMainMenu(self)
 	end
 
+	imgui.SameLine()
+
+	if imgui.Button("Open Folder") then
+		love.system.openURL("file://"..love.filesystem.getSaveDirectory()..'/Mods')
+	end
+
 	imgui.End()
 end)
 
