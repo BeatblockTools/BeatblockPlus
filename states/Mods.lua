@@ -120,6 +120,11 @@ st.loadMainMenu = function(self)
 	self.menuMusicManager:clearOnBeatHooks()
 	cs.menuMusicManager = self.menuMusicManager
 	cs:init()
+
+	-- return to ingame cursor if the settings say so
+	if savedata.options.game.customCursorInMenu and (savedata.options.game.cursorMode ~= "default") then
+		love.mouse.setVisible(false)
+	end
 end
 
 st:setInit(function(self)
@@ -135,6 +140,9 @@ st:setInit(function(self)
 	table.sort(self.sortedIDs, function(a, b)
 		return mods[a].name:lower() < mods[b].name:lower()
 	end)
+
+	-- ingame cursor doesn't work in the mod menu, so we always use the regular one
+	love.mouse.setVisible(true)
 end)
 
 st:setUpdate(function(self, dt)
