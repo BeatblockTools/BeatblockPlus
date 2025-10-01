@@ -38,9 +38,9 @@ end
 
 function basestate.fromPath(name, path)
 	local source = path or ("states/" .. name .. ".lua")
-	basestate.states[name], error = love.filesystem.load(source)
-	if error then
-		print("[BB+] couldn't load state " .. name .. ". Error: " .. error)
+	basestate.states[name], errormsg = love.filesystem.load(source)
+	if errormsg then
+		print("[BB+] couldn't load state " .. name .. ". Error: " .. errormsg)
 	else
 		print("[BB+] made state " .. name)
 	end
