@@ -1,5 +1,5 @@
 mods = {}
-modIcons = { unknown = love.graphics.newImage("Mods/beatblock-plus/unknown.png") }
+modIcons = { unknown = love.graphics.newImage("Mods/BeatblockPlus/unknown.png") }
 
 local function readJsonFromFile(filePath)
 	local contents = love.filesystem.read(filePath)

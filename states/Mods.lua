@@ -59,7 +59,7 @@ local function renderModConfig(mod)
 	imgui.Separator()
 
 	-- toggle for the mod
-	if mod.id ~= "beatblock-plus" then
+	if mod.id ~= "BeatblockPlus" then
 		local enabledPtr = ffi.new("bool[1]", mod.enabled)
 		if imgui.Checkbox("Enabled (Requires Restart)", enabledPtr) then
 			mod.enabled = enabledPtr[0]
@@ -197,7 +197,7 @@ function st:filedropped(file)
 end
 
 st:setInit(function(self)
-	self.selectedModId = "beatblock-plus"
+	self.selectedModId = "BeatblockPlus"
 
 	self.sortedIDs = {}
 	local i = 0
