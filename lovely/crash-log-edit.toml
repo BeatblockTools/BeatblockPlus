@@ -7,7 +7,7 @@ priority = 2147483647
 [[patches]]
 [patches.pattern]
 target = "main.lua"
-pattern = "function love.errhand(error_message)"
+pattern = "function love.errorhandler(error_message)"
 position = "after"
 payload = '''
 if love.graphics.getCanvas() then

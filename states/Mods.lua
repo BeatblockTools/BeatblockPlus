@@ -120,6 +120,80 @@ st.loadMainMenu = function(self)
 	self.menuMusicManager:clearOnBeatHooks()
 	cs.menuMusicManager = self.menuMusicManager
 	cs:init()
+
+	-- return to ingame cursor if the settings say so
+	if savedata.options.game.customCursorInMenu and (savedata.options.game.cursorMode ~= "default") then
+		love.mouse.setVisible(false)
+	end
+end
+
+local function readJsonFromFile(filePath)
+	local contents = love.filesystem.read(filePath)
+	return json.decode(contents)
+end
+
+-- recursively looks for a mod.json and returns the mod data and the parent directory, to later get rid of extra parent folders
+local function findModData(currentDirectory)
+	local modData
+	if love.filesystem.getInfo(currentDirectory .. "/mod.json", 'file') then
+		modData = readJsonFromFile(currentDirectory .. "/mod.json")
+		modData.directory = currentDirectory
+		return modData
+	else
+		local directoryItems = love.filesystem.getDirectoryItems(currentDirectory)
+		for i, filename in ipairs(directoryItems) do
+			local fileInfo = love.filesystem.getInfo(currentDirectory.."/"..filename)
+			if fileInfo then
+				if fileInfo.type == "directory" then
+					modData = findModData(currentDirectory.."/"..filename)
+					if modData.id then
+						local topDirectory = string.match(modData.directory, "([^/]+)")
+						if topDirectory ~= "draganddrop" then
+							modData.directory = currentDirectory.."/"..modData.directory
+						end
+					end
+					return modData
+				end
+			end
+		end
+	end
+end
+
+local function createModFolder(path)
+	if love.filesystem.mount(path, "draganddrop") then
+		local modpath = "Mods/"
+		local modData = findModData("draganddrop")
+		-- print("mounted mod files into " .. modData.directory)
+		if modData and modData.id then
+			modpath = modpath .. modData.id
+		else
+			print("no modID found")
+			return
+		end
+		if love.filesystem.getInfo(modpath) then
+			print("'Mods/" .. modData.id .. "' already exists")
+			return
+		end
+		helpers.recursiveFolderCopy(modpath, modData.directory)
+		print("copied mod files to 'Mods/" .. modData.id .. "'")
+		love.filesystem.unmount(path)
+		-- TODO add interface feedback and tell player to restart game
+	end
+end
+
+-- dropped folder
+function st:directorydropped(path)
+	createModFolder(path)
+end
+
+-- dropped file
+function st:filedropped(file)
+	local path = file:getFilename()
+	if string.sub(path, -4, -1) ~= ".zip" then
+		print(path .. " is not a zip file")
+		return
+	end
+	createModFolder(path)
 end
 
 st:setInit(function(self)
@@ -135,6 +209,9 @@ st:setInit(function(self)
 	table.sort(self.sortedIDs, function(a, b)
 		return mods[a].name:lower() < mods[b].name:lower()
 	end)
+
+	-- ingame cursor doesn't work in the mod menu, so we always use the regular one
+	love.mouse.setVisible(true)
 end)
 
 st:setUpdate(function(self, dt)
@@ -221,6 +298,12 @@ st:setFgDraw(function(self)
 
 	if imgui.Button("Go Back") then
 		self.loadMainMenu(self)
+	end
+
+	imgui.SameLine()
+
+	if imgui.Button("Open Folder") then
+		love.system.openURL("file://"..love.filesystem.getSaveDirectory()..'/Mods')
 	end
 
 	imgui.End()
