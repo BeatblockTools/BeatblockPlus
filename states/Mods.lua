@@ -261,7 +261,7 @@ st:setFgDraw(function(self)
         imgui.Columns(2, "mod_details_" .. mod.id, true)
 
         -- mod icon
-        imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth * 0.227)
+        imgui.SetColumnWidth(imgui.GetColumnIndex(), 82 * 2)
         local imageSizeX = 73 * 2
         local imageSizeY = 33 * 2
         imgui.Image((modIcons[mod.id] or modIcons.unknown), imgui.ImVec2_Float(imageSizeX, imageSizeY))
