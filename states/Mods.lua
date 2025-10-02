@@ -4,27 +4,6 @@ local function playClickSound()
     te.play(sounds.hold, 'static', 'sfx', 0.3)
 end
 
-local function moveDirectory(source, target)
-    love.filesystem.createDirectory(target)
-
-    local files = love.filesystem.getDirectoryItems(source)
-    for _, file in pairs(files) do
-        local sourceFilePath = source .. file
-        local targetFilePath = target .. file
-
-        local contents = love.filesystem.read(sourceFilePath)
-        if contents then
-            local targetFile = love.filesystem.newFile(targetFilePath)
-            targetFile:open("w")
-            targetFile:write(contents)
-            targetFile:flush()
-            love.filesystem.remove(sourceFilePath)
-        end
-    end
-
-    love.filesystem.remove(source)
-end
-
 -- used to automatically render a config if the mod doesn't have a config.lua file
 local function generateConfig(config)
     for k, v in pairs(config) do
@@ -43,64 +22,29 @@ local function generateConfig(config)
     end
 end
 
-local function loadConfigRenderer(mod, path)
-    local chunk, errormsg = love.filesystem.load(path)
-    if errormsg then
-        print("[BB+] Error while loading the config renderer of " .. mod.name .. ". " .. errormsg)
-    else
-        local env = setmetatable({ mod = mod }, { __index = _G })
-        return setfenv(chunk, env)
-    end
-end
-
 local function renderModConfig(mod)
     imgui.TextWrapped(mod.name .. " (" .. mod.version .. ") by " .. mod.author)
     imgui.TextWrapped(mod.description)
     imgui.Separator()
 
     -- toggle for the mod
-    if mod.id ~= "BeatblockPlus" then
+    if mod.id ~= "beatblock-plus" then
         local enabledPtr = ffi.new("bool[1]", mod.enabled)
         if imgui.Checkbox("Enabled (Requires Restart)", enabledPtr) then
             mod.enabled = enabledPtr[0]
-
-            local modPath = "Mods/" .. mod.id .. "/lovely/"
-            local disabledPath = "Mods/disabled/" .. mod.id .. "/lovely/"
-
-            if mod.enabled then
-                moveDirectory(disabledPath, modPath)
-            else
-                moveDirectory(modPath, disabledPath)
-            end
         end
     end
 
     -- if the mod has a config.lua file, use that to render the config gui
     -- else generate it automatically
-    local configPath = "Mods/" .. mod.id .. "/config.lua"
-
-    -- if there is a config.lua file but the renderer isn't loaded already, load it
-    if not mod.configRenderer and love.filesystem.getInfo(configPath) then
-        mod.configRenderer = loadConfigRenderer(mod, configPath)
-    end
-
     if mod.configRenderer then
         mod.configRenderer()
     else
         generateConfig(mod.config)
     end
 
-    if imgui.Button("Save Changes") then
-        local modData = {
-            id = mod.id,
-            name = mod.name,
-            author = mod.author,
-            description = mod.description,
-            version = mod.version,
-            enabled = mod.enabled,
-            config = mod.config
-        }
-        dpf.saveJson("Mods/" .. mod.id .. "/mod.json", modData)
+    if imgui.Button("Save Config") then
+        dpf.saveJson(mod.path .. "/config.json", mod.config)
     end
 end
 
@@ -195,17 +139,17 @@ function st:filedropped(file)
 end
 
 st:setInit(function(self)
-    self.selectedModId = "BeatblockPlus"
+    self.selectedModId = "beatblock-plus"
 
     self.sortedIDs = {}
     local i = 0
-    for modID, _ in pairs(mods) do
+    for modID, _ in pairs(bbp.mods) do
         i = i + 1
         self.sortedIDs[i] = modID
     end
     -- the list contains ids, but they're sorted by name
     table.sort(self.sortedIDs, function(a, b)
-        return mods[a].name:lower() < mods[b].name:lower()
+        return bbp.mods[a].name:lower() < bbp.mods[b].name:lower()
     end)
 
     -- ingame cursor doesn't work in the mod menu, so we always use the regular one
@@ -214,12 +158,8 @@ end)
 
 st:setUpdate(function(self, dt)
     if maininput:pressed("r") then
-        local mod = mods[self.selectedModId]
-        if mod.configRenderer then
-            local configPath = "Mods/" .. mod.id .. "/config.lua"
-            mod.configRenderer = loadConfigRenderer(mod, configPath)
-        end
-
+        -- clear config renderer cache
+        rawset(bbp.mods[self.selectedModId], '_configRenderer', nil)
     elseif maininput:pressed("back") then
         self.loadMainMenu(self)
     end
@@ -241,7 +181,7 @@ st:setFgDraw(function(self)
     imgui.Begin("Mods", true, 295) -- notitlebar, noresize, nomove, nocollapse, nobackground, nosavedsettings
 
     imgui.SetWindowFontScale(2)
-    imgui.Text("Mods (" .. countTable(mods) .. ")")
+    imgui.Text("Mods (" .. countTable(bbp.mods) .. ")")
     imgui.SetWindowFontScale(1)
     imgui.Separator()
 
@@ -254,7 +194,7 @@ st:setFgDraw(function(self)
     imgui.BeginChild_Str("mod_list", imgui.ImVec2_Float(550 * windowScale, 320 * windowScale), 0)
 
     for _, modID in pairs(self.sortedIDs) do
-        local mod = mods[modID]
+        local mod = bbp.mods[modID]
         local childWidth = windowWidth * 0.59
         local childHeight = 42 * windowScale -- just enough to fit the mod icon
         imgui.BeginChild_Str("mod_" .. mod.id, imgui.ImVec2_Float(childWidth, childHeight), 1)
@@ -262,11 +202,14 @@ st:setFgDraw(function(self)
         imgui.Columns(2, "mod_details_" .. mod.id, true)
 
         -- mod icon
-        imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth * 0.227)
-        local imageSizeX = 73 * windowScale
-        local imageSizeY = 33 * windowScale
-        imgui.Image((modIcons[mod.id] or modIcons.unknown), imgui.ImVec2_Float(imageSizeX, imageSizeY))
-        imgui.NextColumn()
+        local modIcon = mod.icon or sprites.bbp.missingIcon
+        if modIcon then
+            imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth * 0.227)
+            local imageSizeX = 73 * windowScale
+            local imageSizeY = 33 * windowScale
+            imgui.Image(modIcon, imgui.ImVec2_Float(imageSizeX, imageSizeY))
+            imgui.NextColumn()
+        end
 
         -- mod details (name, icon, version, etc.)
         imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth)
@@ -288,7 +231,7 @@ st:setFgDraw(function(self)
 
     -- start a new child for config because imgui likes to break everything otherwise
     imgui.BeginChild_Str("mod_config_" .. self.selectedModId, imgui.ImVec2_Float(0, 0), false)
-    renderModConfig(mods[self.selectedModId])
+    renderModConfig(bbp.mods[self.selectedModId])
     imgui.EndChild()
 
     imgui.EndChild() -- end mod list and config
