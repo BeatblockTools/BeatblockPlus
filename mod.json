@@ -1,1 +1,8 @@
-{"author":"BeatblockTools","description":"Mod loader for Beatblock","enabled":true,"config":[],"version":"1.4.1","id":"BeatblockPlus","name":"Beatblock Plus"}
+{
+    "id": "beatblock-plus",
+    "name": "Beatblock Plus",
+    "author": "BeatblockTools",
+    "description": "Mod loader for Beatblock",
+    "version": "1.4.1",
+    "config": []
+}

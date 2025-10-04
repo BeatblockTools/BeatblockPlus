@@ -1,1 +1,4 @@
 .vscode/
+.nolovelyignore
+.lovelyignore
+config.json
