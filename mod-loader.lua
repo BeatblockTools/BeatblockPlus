@@ -1,7 +1,7 @@
 bbp = {
 	mods = {}
 }
--- TODO: deprecated
+-- TODO: remove this later due to deprecation
 mods = bbp.mods
 
 local function readJsonFromFile(filePath)
@@ -57,7 +57,8 @@ local function setModChunkEnvironment(chunk, mod, setDeprecated)
 					mod = mod
 				}
 			end
-			-- TODO: deprecated (is anything even using this?)
+			-- TODO: remove this later due to deprecation
+			-- all of this information is accessible through bbp.mod
 			if setDeprecated then
 				if k == "modId" then
 					return mod.id
