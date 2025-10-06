@@ -2,42 +2,42 @@ local utils = {}
 
 -- Prints a table
 function utils.printTable(table, title, indent)
-    if title then
-        print(title)
-    end
-    indent = indent or 0
-    local indentStr = string.rep("  ", indent)
+	if title then
+		print(title)
+	end
+	indent = indent or 0
+	local indentStr = string.rep("  ", indent)
 
-    for k, v in pairs(table) do
-        if type(v) == "table" then
-            print(indentStr .. tostring(k) .. ":")
-            utils.printTable(v, nil, indent + 1)
-        else
-            print(indentStr .. tostring(k) .. ": " .. tostring(v))
-        end
-    end
+	for k, v in pairs(table) do
+		if type(v) == "table" then
+			print(indentStr .. tostring(k) .. ":")
+			utils.printTable(v, nil, indent + 1)
+		else
+			print(indentStr .. tostring(k) .. ": " .. tostring(v))
+		end
+	end
 end
 
 -- Moves the source directory to the target directory, and deletes the source directory
 function utils.moveDirectory(source, target)
-    love.filesystem.createDirectory(target)
+	love.filesystem.createDirectory(target)
 
-    local files = love.filesystem.getDirectoryItems(source)
-    for _, file in pairs(files) do
-        local sourceFilePath = source .. file
-        local targetFilePath = target .. file
+	local files = love.filesystem.getDirectoryItems(source)
+	for _, file in pairs(files) do
+		local sourceFilePath = source .. file
+		local targetFilePath = target .. file
 
-        local contents = love.filesystem.read(sourceFilePath)
-        if contents then
-            local targetFile = love.filesystem.newFile(targetFilePath)
-            targetFile:open("w")
-            targetFile:write(contents)
-            targetFile:flush()
-            love.filesystem.remove(sourceFilePath)
-        end
-    end
+		local contents = love.filesystem.read(sourceFilePath)
+		if contents then
+			local targetFile = love.filesystem.newFile(targetFilePath)
+			targetFile:open("w")
+			targetFile:write(contents)
+			targetFile:flush()
+			love.filesystem.remove(sourceFilePath)
+		end
+	end
 
-    love.filesystem.remove(source)
+	love.filesystem.remove(source)
 end
 
 -- Recursively loops all files in a directory and calls the callback function for each file.
@@ -59,25 +59,25 @@ end
 -- end)
 --
 function utils.loopFiles(table, dir, callback)
-    local function recurse(currentTable, currentDir)
-        for _, item in ipairs(love.filesystem.getDirectoryItems(currentDir)) do
-            local fullPath = currentDir .. "/" .. item
-            if love.filesystem.getInfo(fullPath, "directory") then
-                currentTable[item] = currentTable[item] or {}
-                recurse(currentTable[item], fullPath)
-            else
-                local fileName = utils.extractFileName(item)
-                callback(currentTable, fullPath, fileName)
-            end
-        end
-    end
+	local function recurse(currentTable, currentDir)
+		for _, item in ipairs(love.filesystem.getDirectoryItems(currentDir)) do
+			local fullPath = currentDir .. "/" .. item
+			if love.filesystem.getInfo(fullPath, "directory") then
+				currentTable[item] = currentTable[item] or {}
+				recurse(currentTable[item], fullPath)
+			else
+				local fileName = utils.extractFileName(item)
+				callback(currentTable, fullPath, fileName)
+			end
+		end
+	end
 
-    recurse(table, dir)
+	recurse(table, dir)
 end
 
 -- Extracts the file name from a file path without the directory and extension
 function utils.extractFileName(path)
-    return path:match("([^/]+)$"):gsub("%..+$", "")
+	return path:match("([^/]+)$"):gsub("%..+$", "")
 end
 
 -- Gets the parent of a file
