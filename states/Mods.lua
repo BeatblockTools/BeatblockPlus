@@ -71,16 +71,11 @@ st.loadMainMenu = function(self)
     end
 end
 
-local function readJsonFromFile(filePath)
-    local contents = love.filesystem.read(filePath)
-    return json.decode(contents)
-end
-
 -- recursively looks for a mod.json and returns the mod data and the parent directory, to later get rid of extra parent folders
 local function findModData(currentDirectory)
     local modData
     if love.filesystem.getInfo(currentDirectory .. "/mod.json", 'file') then
-        modData = readJsonFromFile(currentDirectory .. "/mod.json")
+        modData = dpf.loadJson(currentDirectory .. "/mod.json")
         modData.directory = currentDirectory
         return modData
     else
