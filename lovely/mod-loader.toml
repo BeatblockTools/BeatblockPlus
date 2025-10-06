@@ -3,11 +3,32 @@ version = "1.0.0"
 dump_lua = true
 priority = 2147483647
 
+# bbp module
 [[patches]]
-[patches.copy]
+[patches.module]
+source = "bbp/init.lua"
+before = "main.lua"
+name = "bbp"
+
+[[patches]]
+[patches.module]
+source = "bbp/utils.lua"
+before = "main.lua"
+name = "bbp.utils"
+
+[[patches]]
+[patches.module]
+source = "bbp/mod-loader.lua"
+before = "main.lua"
+name = "bbp.modloader"
+
+[[patches]]
+[patches.pattern]
 target = "main.lua"
-position = "prepend"
-sources = ["mod-loader.lua"]
+pattern = "function love.load()"
+position = "after"
+payload = '''bbp = require("bbp")'''
+match_indent = true
 
 # load mods near the end of love.load()
 [[patches]]
@@ -15,7 +36,7 @@ sources = ["mod-loader.lua"]
 target = "main.lua"
 pattern = "cs = bs.load(project.initState)"
 position = "before"
-payload = "loadMods()"
+payload = '''bbp.modloader.loadMods()'''
 match_indent = true
 
 # handle error and allow custom path
