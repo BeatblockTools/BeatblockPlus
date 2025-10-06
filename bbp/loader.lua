@@ -2,29 +2,31 @@ local loader = {}
 
 local function setModChunkEnvironment(chunk, mod, setDeprecated)
 	local env = setmetatable({}, {
-		mod = mod,
 		__index = function(t, k)
-			if k == "bbp" then
-				return {
-					{ __index = bbp }
-				}
+			if k == "mod" then
+				return mod
 			end
+
 			-- TODO: remove this later due to deprecation
-			-- all of this information is accessible through bbp.mod
+			-- all of this information is accessible through 'mod'
 			if setDeprecated then
 				if k == "modId" then
+					print("[BB+] The mod " .. mod.id ..
+						      " is using the deprecated 'modId' variable which will be removed in a future version. You should use 'mod.id' instead!")
 					return mod.id
 				end
 				if k == "modPath" then
+					print("[BB+] The mod " .. mod.id ..
+						      " is using the deprecated 'modPath' variable which will be removed in a future version. You should use 'mod.path' instead!")
 					return mod.path
 				end
 				if k == "modData" then
-					return mod
-				end
-				if k == "mod" then
+					print("[BB+] The mod " .. mod.id ..
+						      " is using the deprecated 'modData' variable which will be removed in a future version. You should use 'mod' instead!")
 					return mod
 				end
 			end
+
 			return _G[k]
 		end,
 		__newindex = _G
@@ -41,7 +43,6 @@ local function mergeLangFiles(originalLoc, modLoc)
 		originalLoc[key][selectedLanguage] = value
 	end
 end
-
 
 local function getModConfigRenderer(mod)
 	if mod._configRenderer == false then
