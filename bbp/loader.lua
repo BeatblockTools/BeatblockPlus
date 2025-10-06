@@ -1,12 +1,12 @@
-local modloader = {}
+local loader = {}
 
 local function setModChunkEnvironment(chunk, mod, setDeprecated)
 	local env = setmetatable({}, {
+		mod = mod,
 		__index = function(t, k)
 			if k == "bbp" then
 				return {
-					mods = bbp.mods,
-					mod = mod
+					{ __index = bbp }
 				}
 			end
 			-- TODO: remove this later due to deprecation
@@ -95,7 +95,7 @@ local function setModEnabled(mod, enabled)
 	rawset(mod, '_enabled', enabled)
 end
 
-function modloader.loadMods() -- loads mod data, assets, mod icons etc.
+function loader.loadMods() -- loads mod data, assets, mod icons etc.
 	bbp.mods = {}
 
 	-- TODO: remove this later due to deprecation
@@ -293,4 +293,4 @@ function modloader.loadMods() -- loads mod data, assets, mod icons etc.
 	bbp.utils.printTable(shaders, "Shaders:")
 end
 
-return modloader
+return loader

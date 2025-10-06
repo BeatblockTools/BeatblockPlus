@@ -18,9 +18,9 @@ name = "bbp.utils"
 
 [[patches]]
 [patches.module]
-source = "bbp/mod-loader.lua"
+source = "bbp/loader.lua"
 before = "main.lua"
-name = "bbp.modloader"
+name = "bbp.loader"
 
 [[patches]]
 [patches.pattern]
@@ -36,7 +36,7 @@ match_indent = true
 target = "main.lua"
 pattern = "cs = bs.load(project.initState)"
 position = "before"
-payload = '''bbp.modloader.loadMods()'''
+payload = '''bbp.loader.loadMods()'''
 match_indent = true
 
 # handle error and allow custom path

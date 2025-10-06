@@ -1,6 +1,6 @@
 local bbp = {}
 
 bbp.utils = require("bbp.utils")
-bbp.modloader = require("bbp.modloader")
+bbp.loader = require("bbp.loader")
 
 return bbp
