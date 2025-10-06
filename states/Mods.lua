@@ -170,11 +170,10 @@ st:setBgDraw(function(self)
     love.graphics.rectangle('fill', 0, 0, 600, 360)
 end)
 
-local windowScale = 2
-local windowWidth = 600 * windowScale
-local windowHeight = 360 * windowScale
-
 st:setFgDraw(function(self)
+    local windowWidth = imgui.canvasScale and (project.res.x * imgui.canvasScale) or love.graphics.getWidth()
+    local windowHeight = imgui.canvasScale and (project.res.y * imgui.canvasScale) or love.graphics.getHeight()
+
     helpers.SetNextWindowPos(0, 0)
     helpers.SetNextWindowSize(windowWidth, windowHeight)
     --												423
@@ -185,18 +184,18 @@ st:setFgDraw(function(self)
     imgui.SetWindowFontScale(1)
     imgui.Separator()
 
-    imgui.BeginChild_Str("mod_list_and_config", imgui.ImVec2_Float(windowWidth, 320 * windowScale), 0)
+    imgui.BeginChild_Str("mod_list_and_config", imgui.ImVec2_Float(windowWidth, windowHeight - 80), 0)
 
     imgui.Columns(2, "main", true)
     imgui.SetColumnWidth(imgui.GetColumnIndex(), windowWidth * 0.6)
 
     -- start drawing mod boxes
-    imgui.BeginChild_Str("mod_list", imgui.ImVec2_Float(550 * windowScale, 320 * windowScale), 0)
+    imgui.BeginChild_Str("mod_list", imgui.ImVec2_Float(550 / 600 * windowWidth, windowHeight - 80), 0)
 
     for _, modID in pairs(self.sortedIDs) do
         local mod = bbp.mods[modID]
         local childWidth = windowWidth * 0.59
-        local childHeight = 42 * windowScale -- just enough to fit the mod icon
+        local childHeight = 42 * 2 -- just enough to fit the mod icon
         imgui.BeginChild_Str("mod_" .. mod.id, imgui.ImVec2_Float(childWidth, childHeight), 1)
 
         imgui.Columns(2, "mod_details_" .. mod.id, true)
@@ -204,10 +203,10 @@ st:setFgDraw(function(self)
         -- mod icon
         local modIcon = mod.icon or sprites.bbp.missingIcon
         if modIcon then
-            imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth * 0.227)
-            local imageSizeX = 73 * windowScale
-            local imageSizeY = 33 * windowScale
-            imgui.Image(modIcon, imgui.ImVec2_Float(imageSizeX, imageSizeY))
+            imgui.SetColumnWidth(imgui.GetColumnIndex(), 82 * 2)
+            local imageSizeX = 73 * 2
+            local imageSizeY = 33 * 2
+            imgui.Image((modIcons[mod.id] or modIcons.unknown), imgui.ImVec2_Float(imageSizeX, imageSizeY))
             imgui.NextColumn()
         end
 
