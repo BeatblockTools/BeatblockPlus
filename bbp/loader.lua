@@ -173,7 +173,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 					if modData.enabled == false then
 						local disabledPath = "Mods/disabled/" .. mod.id .. "/lovely/"
 						if love.filesystem.getInfo(disabledPath, 'directory') then
-							moveDirectory(disabledPath, mod.path .. "/lovely/")
+							bbp.utils.moveDirectory(disabledPath, mod.path .. "/lovely/")
 						end
 					end
 				end
@@ -185,7 +185,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 
 		-- load mod config if it exists
 		if love.filesystem.getInfo(mod.path .. "/config.json", 'file') then
-			local modConfig = readJsonFromFile(mod.path .. "/config.json")
+			local modConfig = bbp.utils.readJsonFromFile(mod.path .. "/config.json")
 			if modConfig then
 				-- a shallow copy is enough in this case
 				for k, v in pairs(modConfig) do
@@ -237,7 +237,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 			bbp.utils.loopFiles(animations, assetsPath .. "/animations", function(tbl, path, fileName)
 				if path:endswith(".png") then
 					print("[BB+] injecting animation " .. path .. "...")
-					local data = getParent(path) .. "data.json"
+					local data = bbp.utils.getFileParent(path) .. "data.json"
 					if not love.filesystem.getInfo(data, 'file') then
 						print("[BB+] Error while injecting animation '" .. path .. "'. The '" .. data .. "' file is missing!")
 					end
