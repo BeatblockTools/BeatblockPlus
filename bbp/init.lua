@@ -4,12 +4,14 @@ bbp.utils = require("bbp.utils")
 bbp.loader = require("bbp.loader")
 
 bbp.mods = setmetatable({}, {
-    __index = bbp.loader.mods
+    __index = function(_, k)
+        return bbp.loader.mods[k]
+    end
 })
 
 bbp.config = setmetatable({}, {
-    __index = function(t, k)
-        return t.loader.mods[k].config
+    __index = function(_, k)
+        return bbp.loader.mods[k].config
     end
 })
 
