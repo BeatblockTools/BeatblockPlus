@@ -11,26 +11,25 @@ pattern = "function love.errorhandler(error_message)"
 position = "after"
 payload = '''
 if love.graphics.getCanvas() then
-  love.graphics.setCanvas()
+	love.graphics.setCanvas()
 end
 
-if not loc then
-	loc = {
-		get = function(a,b)
-			return a
-		end
-	}
-end
-
-if not inspectVar then
-	inspectVar = require "lib.inspect"
-end
-
-if not getModNames then
-	function getModNames()
-		return "Game crashed before mods could load"
+loc = loc or {
+	get = function(a,b)
+		return a
 	end
-end
+}
+
+inspectVar = inspectVar or require "lib.inspect"
+
+bbp = bbp or {
+	utils =
+		{
+			getModList = function()
+				return "Game crashed before mods could load"
+			end
+		}
+	}
 '''
 match_indent = true
 times = 1
@@ -65,6 +64,13 @@ target = "main.lua"
 pattern = '''local procCount = love.system.getProcessorCount()'''
 position = "before"
 payload = '''
-issuebody = "!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!\n Mod list: \n" .. getModNames() .. "\n!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!\n\n" .. issuebody
+issuebody = string.format([[
+!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!
+Mod list:
+%s
+!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!
+
+%s
+]], bbp.utils.getModList(), issuebody)
 '''
 match_indent = false

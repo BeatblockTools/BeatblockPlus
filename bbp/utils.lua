@@ -92,14 +92,14 @@ function string:endsWith(ending)
 end
 
 -- Gets a list of all mod names, their versions and authors
-function utils.getModNames()
-	local modNames = {}
+function utils.getModList()
+	local modList = {}
 
 	for _, mod in pairs(bbp.mods) do
-		table.insert(modNames, "  - " .. mod.name .. " (" .. mod.version .. ") by " .. mod.author)
+		table.insert(modList, "  - " .. mod.name .. " (" .. mod.version .. ") by " .. mod.author)
 	end
 
-	return table.concat(modNames, "\n")
+	return table.concat(modList, "\n")
 end
 
 -- Checks if a table contains a value, does NOT check for nested values
