@@ -20,7 +20,7 @@ pattern = "langOption.languageIndex = 0"
 position = "before"
 payload = '''
 for _, language in ipairs(customLanguages) do
-  if not tableContains(langOption.languages, language) then
+	if not tableContains(langOption.languages, language) then
 		table.insert(langOption.languages, language)
 	end
 end
