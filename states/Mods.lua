@@ -29,7 +29,7 @@ local function renderModConfig(mod)
 
 	-- toggle for the mod
 	if mod.id ~= "beatblock-plus" then
-		mod.enabled, _ = bbp.gui.checkbox("Enabled (Requires Restart)", mod.enabled)
+		mod.enabled = helpers.InputBool("Enabled (Requires Restart)", mod.enabled)
 	end
 
 	-- if the mod has a config.lua file, use that to render the config gui

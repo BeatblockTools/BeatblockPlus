@@ -2,6 +2,7 @@ local gui = {}
 
 -- Quick way to create a checkbox.
 -- Returns 2 values, new value and whether it was changed
+-- If you don't need to know whether it was changed use helpers.InputBool(label, value) instead.
 --
 -- Examples:
 -- local changed
