@@ -185,7 +185,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 
 		-- load mod config if it exists
 		if love.filesystem.getInfo(mod.path .. "/config.json", 'file') then
-			local modConfig = readJsonFromFile(mod.path .. "/config.json")
+			local modConfig = dpf.loadJson(mod.path .. "/config.json")
 			if modConfig then
 				-- a shallow copy is enough in this case
 				for k, v in pairs(modConfig) do

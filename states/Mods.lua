@@ -29,10 +29,7 @@ local function renderModConfig(mod)
 
 	-- toggle for the mod
 	if mod.id ~= "beatblock-plus" then
-		local enabledPtr = ffi.new("bool[1]", mod.enabled)
-		if imgui.Checkbox("Enabled (Requires Restart)", enabledPtr) then
-			mod.enabled = enabledPtr[0]
-		end
+		mod.enabled, _ = bbp.gui.checkbox("Enabled (Requires Restart)", mod.enabled)
 	end
 
 	-- if the mod has a config.lua file, use that to render the config gui
@@ -196,7 +193,7 @@ st:setFgDraw(function(self)
 		imgui.Columns(2, "mod_details_" .. mod.id, true)
 
 		-- mod icon
-		local modIcon = mod.icon or sprites.bbp.missingIcon
+		local modIcon = mod.icon or sprites.bbp.missing
 		if modIcon then
 			imgui.SetColumnWidth(imgui.GetColumnIndex(), 82 * 2)
 			local imageSizeX = 73 * 2

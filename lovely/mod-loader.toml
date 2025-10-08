@@ -3,6 +3,15 @@ version = "1.0.0"
 dump_lua = true
 priority = 2147483647
 
+# lovely module
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = "function love.load()"
+position = "before"
+payload = '''lovely = require("lovely")'''
+match_indent = true
+
 # bbp module
 [[patches]]
 [patches.module]
@@ -21,6 +30,12 @@ name = "bbp.utils"
 source = "bbp/loader.lua"
 before = "main.lua"
 name = "bbp.loader"
+
+[[patches]]
+[patches.module]
+source = "bbp/gui.lua"
+before = "main.lua"
+name = "bbp.gui"
 
 [[patches]]
 [patches.pattern]
