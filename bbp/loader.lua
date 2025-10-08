@@ -97,10 +97,10 @@ local function setModEnabled(mod, enabled)
 end
 
 function loader.loadMods() -- loads mod data, assets, mod icons etc.
-	bbp.mods = {}
+	loader.mods = {}
 
 	-- TODO: remove this later due to deprecation
-	mods = bbp.mods
+	mods = loader.mods
 
 	local modsPath = "Mods"
 	local success = love.filesystem.getInfo(modsPath, 'directory')
@@ -173,7 +173,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 					if modData.enabled == false then
 						local disabledPath = "Mods/disabled/" .. mod.id .. "/lovely/"
 						if love.filesystem.getInfo(disabledPath, 'directory') then
-							moveDirectory(disabledPath, mod.path .. "/lovely/")
+							bbp.utils.moveDirectory(disabledPath, mod.path .. "/lovely/")
 						end
 					end
 				end
@@ -205,7 +205,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 			end
 		end
 
-		bbp.mods[mod.id] = mod
+		loader.mods[mod.id] = mod
 		print("[BB+] Registered mod '" .. mod.name .. "' by " .. mod.author .. ".")
 
 		if not mod.enabled then
@@ -237,7 +237,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 			bbp.utils.loopFiles(animations, assetsPath .. "/animations", function(tbl, path, fileName)
 				if path:endswith(".png") then
 					print("[BB+] injecting animation " .. path .. "...")
-					local data = getParent(path) .. "data.json"
+					local data = bbp.utils.getFileParent(path) .. "data.json"
 					if not love.filesystem.getInfo(data, 'file') then
 						print("[BB+] Error while injecting animation '" .. path .. "'. The '" .. data .. "' file is missing!")
 					end
