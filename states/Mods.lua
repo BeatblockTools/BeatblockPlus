@@ -169,6 +169,7 @@ st:setFgDraw(function(self)
 	helpers.SetNextWindowPos(0, 0)
 	helpers.SetNextWindowSize(windowWidth, windowHeight)
 	--												423
+	bbp.gui.pushStyle()
 	imgui.Begin("Mods", true, 295) -- notitlebar, noresize, nomove, nocollapse, nobackground, nosavedsettings
 
 	imgui.SetWindowFontScale(2)
@@ -239,6 +240,7 @@ st:setFgDraw(function(self)
 	end
 
 	imgui.End()
+	bbp.gui.popStyle()
 end)
 
 return st
