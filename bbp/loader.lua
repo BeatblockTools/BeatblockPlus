@@ -111,7 +111,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 	end
 
 	for _, modDir in ipairs(love.filesystem.getDirectoryItems(modsPath)) do
-		if modDir == "lovely" then
+		if not love.filesystem.getInfo(modsPath .. "/" .. modDir .. "/mod.json", 'file') then
 			goto continue
 		end
 
@@ -154,31 +154,29 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 			mod.enabled = true
 		end
 
-		-- load mod data if it exists
-		if love.filesystem.getInfo(mod.path .. "/mod.json", 'file') then
-			local modData = dpf.loadJson(mod.path .. "/mod.json")
-			mod.id = modData.id or mod.id
-			mod.name = modData.name or mod.name
-			mod.author = modData.author or mod.author
-			mod.description = modData.description or mod.description
-			mod.version = modData.version or mod.version
-			mod.defaultConfig = modData.config or mod.defaultConfig
-			mod.config = helpers.copytable(mod.defaultConfig)
-
-			-- TODO: deprecated
-			if modData.enabled ~= nil then
-				print("[BB+] '" .. mod.path .. "/mod.json" .. "': 'enabled' is deprecated in favor of the .lovelyignore file")
-				if mod.enabled == nil then
-					mod.enabled = modData.enabled
-					if modData.enabled == false then
-						local disabledPath = "Mods/disabled/" .. mod.id .. "/lovely/"
-						if love.filesystem.getInfo(disabledPath, 'directory') then
-							bbp.utils.moveDirectory(disabledPath, mod.path .. "/lovely/")
-						end
+		-- load mod data
+		local modData = dpf.loadJson(mod.path .. "/mod.json")
+		mod.id = modData.id or mod.id
+		mod.name = modData.name or mod.name
+		mod.author = modData.author or mod.author
+		mod.description = modData.description or mod.description
+		mod.version = modData.version or mod.version
+		mod.defaultConfig = modData.config or mod.defaultConfig
+		mod.config = helpers.copytable(mod.defaultConfig)
+		-- TODO: deprecated
+		if modData.enabled ~= nil then
+			print("[BB+] '" .. mod.path .. "/mod.json" .. "': 'enabled' is deprecated in favor of the .lovelyignore file")
+			if mod.enabled == nil then
+				mod.enabled = modData.enabled
+				if modData.enabled == false then
+					local disabledPath = "Mods/disabled/" .. mod.id .. "/lovely/"
+					if love.filesystem.getInfo(disabledPath, 'directory') then
+						bbp.utils.moveDirectory(disabledPath, mod.path .. "/lovely/")
 					end
 				end
 			end
 		end
+		
 		if mod.enabled == nil then
 			mod.enabled = true
 		end
