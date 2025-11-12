@@ -93,6 +93,10 @@ end
 
 -- Gets a list of all mod names, their versions and authors
 function utils.getModList()
+	if not (bbp and bbp.mods) or next(bbp.mods) == nil then
+		return "Game crashed before mods could load"
+	end
+
 	local modList = {}
 
 	for _, mod in pairs(bbp.mods) do

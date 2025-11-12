@@ -22,14 +22,15 @@ loc = loc or {
 
 inspectVar = inspectVar or require "lib.inspect"
 
-bbp = bbp or {
-	utils =
-		{
+if not (bbp and bbp.utils and bbp.utils.getModList) then
+	bbp = {
+		utils = {
 			getModList = function()
 				return "Game crashed before mods could load"
 			end
 		}
 	}
+end
 '''
 match_indent = true
 times = 1
