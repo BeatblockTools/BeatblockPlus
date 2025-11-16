@@ -72,7 +72,7 @@ local function getModConfigRenderer(mod)
 	return mod._configRenderer
 end
 
-function setModEnabled(mod, enabled)
+function loader.setModEnabled(mod, enabled)
 	if enabled == nil then
 		enabled = true
 	end

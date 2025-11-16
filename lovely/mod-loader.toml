@@ -45,7 +45,7 @@ position = "after"
 payload = '''bbp = require("bbp")'''
 match_indent = true
 
-# load mods near the end of love.load(args)
+# load mods near the end of love.load
 [[patches]]
 [patches.pattern]
 target = "main.lua"
