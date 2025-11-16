@@ -56,6 +56,7 @@ Would you like to create a crash log?
 
 You can also try removing your mods one by one to find out which mod is causing the crash.
 ]]
+print(fullError)
 '''
 match_indent = false
 
