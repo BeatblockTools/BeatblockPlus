@@ -72,7 +72,7 @@ local function getModConfigRenderer(mod)
 	return mod._configRenderer
 end
 
-local function setModEnabled(mod, enabled)
+function setModEnabled(mod, enabled)
 	if enabled == nil then
 		enabled = true
 	end
@@ -176,7 +176,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 				end
 			end
 		end
-		
+
 		if mod.enabled == nil then
 			mod.enabled = true
 		end
