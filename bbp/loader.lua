@@ -137,7 +137,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 			end,
 			__newindex = function(t, k, v)
 				if k == "enabled" then
-					setModEnabled(t, v)
+					loader.setModEnabled(t, v)
 				end
 			end
 		})
