@@ -4,5 +4,7 @@
     "author": "BeatblockTools",
     "description": "Mod loader for Beatblock",
     "version": "1.4.1",
-    "config": []
+    "config": {
+		"modMenuGuiTheme": true
+	}
 }
