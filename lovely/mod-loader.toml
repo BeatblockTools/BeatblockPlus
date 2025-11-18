@@ -95,6 +95,7 @@ payload = '''
 self.mainMenu:addOption('Mods', function()
 	cs = bs.load('Mods')
 	self.menuMusicManager:clearOnBeatHooks()
+	self:leave()
 	cs.menuMusicManager = self.menuMusicManager
 	cs:init()
 end, 17 * 3, nil, sprites.menu.mods)
