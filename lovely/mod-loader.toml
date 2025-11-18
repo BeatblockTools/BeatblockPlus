@@ -7,7 +7,7 @@ priority = 2147483647
 [[patches]]
 [patches.pattern]
 target = "main.lua"
-pattern = "function love.load()"
+pattern = "function love.load(args)"
 position = "before"
 payload = '''lovely = require("lovely")'''
 match_indent = true
@@ -40,12 +40,12 @@ name = "bbp.gui"
 [[patches]]
 [patches.pattern]
 target = "main.lua"
-pattern = "function love.load()"
+pattern = "function love.load(args)"
 position = "after"
 payload = '''bbp = require("bbp")'''
 match_indent = true
 
-# load mods near the end of love.load()
+# load mods near the end of love.load
 [[patches]]
 [patches.pattern]
 target = "main.lua"

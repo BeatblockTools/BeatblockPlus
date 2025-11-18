@@ -176,7 +176,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 				end
 			end
 		end
-		
+
 		if mod.enabled == nil then
 			mod.enabled = true
 		end

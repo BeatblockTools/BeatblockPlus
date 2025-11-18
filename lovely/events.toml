@@ -7,7 +7,7 @@ priority = 2147483647
 [[patches]]
 [patches.pattern]
 target = "main.lua"
-pattern = "function love.load()"
+pattern = "function love.load(args)"
 position = "after"
 payload = "customEvents = {}"
 match_indent = true
