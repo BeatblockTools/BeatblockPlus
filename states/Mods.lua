@@ -170,7 +170,7 @@ st:setFgDraw(function(self)
 	helpers.SetNextWindowSize(windowWidth, windowHeight)
 	--												423
 	local appliedBBPTheme = false -- The following config may change mid draw call
-	if bbp.loader.mods["beatblock-plus"].config.modMenuGuiTheme then
+	if mod.config.modMenuGuiTheme then
 		bbp.gui.pushStyle()
 		appliedBBPTheme = true
 	end
