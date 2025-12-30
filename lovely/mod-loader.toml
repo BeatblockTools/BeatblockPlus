@@ -62,7 +62,7 @@ pattern = '''
 function basestate.new(filename,name)
   name = name or filename
   basestate.states[name] = love.filesystem.load("states/" .. filename .. ".lua") -- this is a bad idea
-  print("made state ".. name)
+  log("made state ".. name)
 end
 '''
 position = "at"
