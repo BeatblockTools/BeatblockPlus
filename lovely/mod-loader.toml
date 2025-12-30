@@ -62,16 +62,9 @@ pattern = '''
 function basestate.new(filename,name)
   name = name or filename
   basestate.states[name] = love.filesystem.load("states/" .. filename .. ".lua") -- this is a bad idea
-  log("made state ".. name)
-end
 '''
 position = "at"
 payload = '''
-function basestate.new(filename, name)
-	name = name or filename
-	basestate.fromPath(name, "states/" .. filename .. ".lua")
-end
-
 function basestate.fromPath(name, path)
 	local source = path or ("states/" .. name .. ".lua")
 	local errormsg
@@ -82,6 +75,10 @@ function basestate.fromPath(name, path)
 		print("[BB+] made state " .. name)
 	end
 end
+
+function basestate.new(filename, name)
+	name = name or filename
+	basestate.fromPath(name, "states/" .. filename .. ".lua")
 '''
 match_indent = true
 
