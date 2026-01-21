@@ -269,7 +269,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 			print("[BB+] injecting entity " .. path .. "...")
 			em.new(path, fileName)
 			if em.entities[fileName] then
-				setModChunkEnvironment(bs.states[fileName], mod)
+				-- setModChunkEnvironment(bs.states[fileName], mod)
 			end
 		end)
 
