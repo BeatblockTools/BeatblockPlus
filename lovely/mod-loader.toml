@@ -79,7 +79,7 @@ function basestate.fromPath(name, path)
 	if errormsg then
 		print("[BB+] couldn't load state " .. name .. ". Error: " .. errormsg)
 	else
-		print("[BB+] made state " .. name)
+		-- print("[BB+] made state " .. name) -- double logging for the same thing, since print in the patch is different in bb main and bb beta
 	end
 end
 '''
