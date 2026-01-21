@@ -5,6 +5,6 @@
     "description": "Mod loader for Beatblock",
     "version": "1.4.1",
     "config": {
-		"modMenuGuiTheme": true
-	}
+        "modMenuGuiTheme": true
+    }
 }
