@@ -181,13 +181,13 @@ st:setFgDraw(function(self)
 	imgui.SetWindowFontScale(1)
 	imgui.Separator()
 
-	imgui.BeginChild_Str("mod_list_and_config", imgui.ImVec2_Float(windowWidth, windowHeight - 80), 0)
+	imgui.BeginChild_Str("mod_list_and_config", imgui.ImVec2_Float(windowWidth, windowHeight - 90), 0)
 
 	imgui.Columns(2, "main", true)
 	imgui.SetColumnWidth(imgui.GetColumnIndex(), windowWidth * 0.6)
 
 	-- start drawing mod boxes
-	imgui.BeginChild_Str("mod_list", imgui.ImVec2_Float(550 / 600 * windowWidth, windowHeight - 80), 0)
+	imgui.BeginChild_Str("mod_list", imgui.ImVec2_Float(550 / 600 * windowWidth, windowHeight - 90), 0)
 
 	for _, modID in pairs(self.sortedIDs) do
 		local mod = bbp.mods[modID]
