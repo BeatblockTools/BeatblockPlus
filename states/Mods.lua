@@ -169,7 +169,11 @@ st:setFgDraw(function(self)
 	helpers.SetNextWindowPos(0, 0)
 	helpers.SetNextWindowSize(windowWidth, windowHeight)
 	--												423
-	bbp.gui.pushStyle()
+	local appliedBBPTheme = false -- The following config may change mid draw call
+	if mod.config.modMenuGuiTheme then
+		bbp.gui.pushStyle()
+		appliedBBPTheme = true
+	end
 	imgui.Begin("Mods", true, 295) -- notitlebar, noresize, nomove, nocollapse, nobackground, nosavedsettings
 
 	imgui.SetWindowFontScale(2)
@@ -240,7 +244,9 @@ st:setFgDraw(function(self)
 	end
 
 	imgui.End()
-	bbp.gui.popStyle()
+	if appliedBBPTheme then
+		bbp.gui.popStyle()
+	end
 end)
 
 return st
