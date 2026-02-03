@@ -1,9 +1,5 @@
 local st = Gamestate:new('Mods')
 
-local function playClickSound()
-	te.play(sounds.hold, 'static', 'sfx', 0.3)
-end
-
 -- used to automatically render a config if the mod doesn't have a config.lua file
 local function generateConfig(config)
 	for k, v in pairs(config) do
