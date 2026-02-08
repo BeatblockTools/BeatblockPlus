@@ -70,9 +70,12 @@ issuebody = string.format([[
 !!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!
 Mod list:
 %s
+
+lovely-injector warnings:
+%s
 !!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!
 
 %s
-]], bbp.utils.getModList(), issuebody)
+]], bbp.utils.getModList(), bbp.utils.getLovelyInjectorWarnings(), issuebody)
 '''
 match_indent = false

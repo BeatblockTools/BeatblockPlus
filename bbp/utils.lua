@@ -94,7 +94,7 @@ end
 -- Gets a list of all mod names, their versions and authors
 function utils.getModList()
 	if not (bbp and bbp.mods) or next(bbp.mods) == nil then
-		return "Game crashed before mods could load"
+		return "  Game crashed before mods could load"
 	end
 
 	local modList = {}
@@ -104,6 +104,53 @@ function utils.getModList()
 	end
 
 	return table.concat(modList, "\n")
+end
+
+-- Finds all lovely injector warning messages in the most recent log file
+function utils.getLovelyInjectorWarnings()
+	local lovelyLogsPath = "Mods/lovely/log"
+
+	-- get the newest log file
+	local logPath = nil
+	local newestTime = 0
+	for _, item in ipairs(love.filesystem.getDirectoryItems(lovelyLogsPath)) do
+		if item:match("%.log$") then
+			local path = lovelyLogsPath .. "/" .. item
+			local info = love.filesystem.getInfo(path)
+			
+			if info and info.modtime > newestTime then
+				newestTime = info.modtime
+				logPath = path
+			end
+		end
+	end
+
+	local warnList = {}
+
+	if logPath then
+		local content = love.filesystem.read(logPath)
+		for line in content:gmatch("[^\r\n]+") do
+			-- lovely warnings sometimes accidentally break up into two lines and this combines them again
+			local warning, count = line:gsub("^WARN %- %[♥%] ' on target '", "", 1)
+			if count > 0 and #warnList > 0 then
+				warnList[#warnList] = warnList[#warnList].."' on target '"..warning
+			else
+				-- regular warnings
+				local warning, count = line:gsub("^WARN %- %[♥%]", "", 1)
+				if count > 0 then
+					table.insert(warnList, "  -"..warning)
+				end
+			end
+		end
+	else
+		return "  log file not found"
+	end
+
+	if #warnList == 0 then
+		return "  no warnings found in the log file"
+	end
+
+	return table.concat(warnList, "\n")
 end
 
 -- Checks if a table contains a value, does NOT check for nested values
