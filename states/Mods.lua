@@ -127,6 +127,8 @@ function st:filedropped(file)
 end
 
 st:setInit(function(self)
+	love.keyboard.setTextInput(true)
+
 	self.selectedModId = "beatblock-plus"
 
 	self.sortedIDs = {}
