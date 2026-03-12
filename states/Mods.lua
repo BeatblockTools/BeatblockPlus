@@ -64,66 +64,63 @@ st.loadMainMenu = function(self)
 	end
 end
 
--- recursively looks for a mod.json and returns the mod data and the parent directory, to later get rid of extra parent folders
-local function findModData(currentDirectory)
-	local modData
-	if love.filesystem.getInfo(currentDirectory .. "/mod.json", 'file') then
-		modData = dpf.loadJson(currentDirectory .. "/mod.json")
-		modData.directory = currentDirectory
-		return modData
-	else
-		local directoryItems = love.filesystem.getDirectoryItems(currentDirectory)
-		for i, filename in ipairs(directoryItems) do
-			local fileInfo = love.filesystem.getInfo(currentDirectory .. "/" .. filename)
-			if fileInfo and fileInfo.type == "directory" then
-				modData = findModData(currentDirectory .. "/" .. filename)
-				if modData.id then
-					local topDirectory = string.match(modData.directory, "([^/]+)")
-					if topDirectory ~= "draganddrop" then
-						modData.directory = currentDirectory .. "/" .. modData.directory
-					end
-				end
-				return modData
+-- look for directory/folder-name/mod.json and return folder-name
+local function findModFolder(directory)
+	local modFolder
+	local directoryItems = love.filesystem.getDirectoryItems(directory)
+	for _, item in pairs(directoryItems) do
+		local fileInfo = love.filesystem.getInfo(directory .. "/" .. item)
+		if fileInfo and fileInfo.type == "directory" then
+			if love.filesystem.getInfo(directory .. "/" .. item) then
+				modFolder = item
+				break
 			end
 		end
 	end
+	return modFolder
 end
 
-local function createModFolder(path)
-	if love.filesystem.mount(path, "draganddrop") then
-		local modpath = "Mods/"
-		local modData = findModData("draganddrop")
-		-- print("mounted mod files into " .. modData.directory)
-		if modData and modData.id then
-			modpath = modpath .. modData.id
-		else
-			print("no modID found")
-			return
-		end
-		if love.filesystem.getInfo(modpath) then
-			print("'Mods/" .. modData.id .. "' already exists")
-			return
-		end
-		helpers.recursiveFolderCopy(modpath, modData.directory)
-		print("copied mod files to 'Mods/" .. modData.id .. "'")
-		love.filesystem.unmount(path)
-		-- TODO add interface feedback and tell player to restart game
-	end
-end
-
--- dropped folder
+local openPopupTitle = ""
 function st:directorydropped(path)
-	createModFolder(path)
+	openPopupTitle = "error: folder dropped"
 end
 
--- dropped file
 function st:filedropped(file)
 	local path = file:getFilename()
 	if string.sub(path, -4, -1) ~= ".zip" then
-		print(path .. " is not a zip file")
+		print("not a valid zip file: " .. path)
+		openPopupTitle = "error: invalid file dropped"
 		return
 	end
-	createModFolder(path)
+
+	if love.filesystem.mount(path, "draganddrop") then
+		local modsPath = "Mods/"
+		local modFolder = findModFolder("draganddrop")
+		
+		if not modFolder then
+			print("couldn't find mod.json in zip file: " .. path)
+			openPopupTitle = "error: couldn't identify mod"
+			love.filesystem.unmount(path)
+			return
+		end
+
+		local fullPath = modsPath..modFolder
+
+		if love.filesystem.getInfo(fullPath) then
+			openPopupTitle = "error: mod already exists"
+			love.filesystem.unmount(path)
+			return
+		end
+
+		love.filesystem.createDirectory(fullPath)
+		helpers.recursiveFolderCopy(fullPath, "draganddrop".."/"..modFolder)
+		openPopupTitle = "new mod added"		
+		love.filesystem.unmount(path)
+	else
+		-- I think this only happens if someone drags a completely empty zip into the game.
+		print("didn't mount draganddrop directory")
+		return
+	end
 end
 
 st:setInit(function(self)
@@ -239,6 +236,59 @@ st:setFgDraw(function(self)
 
 	if imgui.Button("Open Folder") then
 		love.system.openURL("file://" .. love.filesystem.getSaveDirectory() .. '/Mods')
+	end
+
+	--popups
+
+	local popupFlags = bit.bor(imgui.ImGuiWindowFlags_AlwaysAutoResize, imgui.ImGuiWindowFlags_NoResize, imgui.ImGuiWindowFlags_NoMove, imgui.ImGuiCond_Always)
+
+	local function popupBody(text)
+		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
+			imgui.CloseCurrentPopup()
+		end
+
+		imgui.Text(text)
+
+		imgui.Separator()
+		if imgui.Button("OK") then
+			imgui.CloseCurrentPopup()
+		end
+		
+		imgui.SetItemDefaultFocus()
+	end
+
+	if openPopupTitle ~= "" then
+		imgui.OpenPopup_Str(openPopupTitle)
+		openPopupTitle = ""
+	end
+	
+	if imgui.BeginPopupModal("error: folder dropped", nil, popupFlags) then
+		popupBody("Drag and drop is not supported for folders. Please use a zip file.\nNo mod was added.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("error: invalid file dropped", nil, popupFlags) then
+		popupBody("Could not identify the dropped file. Make sure you're using a .zip file.\nNo mod was added.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("error: couldn't identify mod", nil, popupFlags) then
+		popupBody([[The zip file doesn't have a mod.json where we expected one to be.
+Make sure that your file has the following structure: modFile.zip/folder-name/mod.json
+No mod was added.]])
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("error: mod already exists", nil, popupFlags) then
+		popupBody([[A mod with this folder name is already present.
+If you're trying to update, please remove the previous version from your Mods directory.
+No mod was added.]])
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("new mod added", nil, popupFlags) then
+		popupBody("The mod has been added successfully!\nRestart the game for the mod to take effect.")
+		imgui.EndPopup()
 	end
 
 	imgui.End()
