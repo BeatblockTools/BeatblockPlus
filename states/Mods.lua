@@ -71,7 +71,7 @@ local function findModFolder(directory)
 	for _, item in pairs(directoryItems) do
 		local fileInfo = love.filesystem.getInfo(directory .. "/" .. item)
 		if fileInfo and fileInfo.type == "directory" then
-			if love.filesystem.getInfo(directory .. "/" .. item) then
+			if love.filesystem.getInfo(directory .. "/" .. item .. "/" .. "mod.json") then
 				modFolder = item
 				break
 			end
@@ -260,6 +260,7 @@ st:setFgDraw(function(self)
 	if openPopupTitle ~= "" then
 		imgui.OpenPopup_Str(openPopupTitle)
 		openPopupTitle = ""
+		te.playOne(sounds.barely,"static",'sfx',1.5)
 	end
 	
 	if imgui.BeginPopupModal("error: folder dropped", nil, popupFlags) then
