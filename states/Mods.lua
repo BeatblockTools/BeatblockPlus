@@ -56,7 +56,7 @@ local function renderModConfig(mod)
 	end
 
 	if imgui.Button("Reset to Default Config") then
-		openPopup("config reset confirmation", {name = mod.name, path = mod.path})
+		openPopup("config reset confirmation", {name = mod.name, path = mod.path, id = mod.id})
 	end
 end
 
@@ -337,9 +337,14 @@ st:setFgDraw(function(self)
 			if not love.filesystem.getInfo(self.popupData.configPath) then
 				openPopupNextFrame(self, "error: no config.json found", self.popupData)
 			end
+
+			dpf.saveJson(self.popupData.configPath, mod.config)
 			
 			local success = love.filesystem.remove(self.popupData.configPath)
 			if success then
+				for k, v in pairs(bbp.mods[self.popupData.id].defaultConfig) do
+					bbp.mods[self.popupData.id].config[k] = v
+				end
 				openPopupNextFrame(self, "successfully reset config", self.popupData)
 			else
 				openPopupNextFrame(self, "error: failed to delete config.json", self.popupData)
