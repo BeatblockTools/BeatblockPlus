@@ -18,6 +18,21 @@ local function generateConfig(config)
 	end
 end
 
+-- I'm so sorry for using a string for control flow, but it's the best solution I could find.
+local nextPopupTitle = ""
+local nextPopupData = {}
+
+local function openPopup(title, data)
+	nextPopupTitle = title
+	nextPopupData = data or {}
+end
+
+local function openPopupNextFrame(self, title, data)
+	-- opening a popup from within another popup has to be delayed to the next frame
+	self.nextPopupTitle = title
+	self.nextPopupData = data or {}
+end
+
 local function renderModConfig(mod)
 	imgui.TextWrapped(mod.name .. " (" .. mod.version .. ") by " .. mod.author)
 	imgui.TextWrapped(mod.description)
@@ -38,6 +53,10 @@ local function renderModConfig(mod)
 
 	if imgui.Button("Save Config") then
 		dpf.saveJson(mod.path .. "/config.json", mod.config)
+	end
+
+	if imgui.Button("Reset to Default Config") then
+		openPopup("config reset confirmation", {name = mod.name, path = mod.path})
 	end
 end
 
@@ -80,16 +99,15 @@ local function findModFolder(directory)
 	return modFolder
 end
 
-local openPopupTitle = ""
 function st:directorydropped(path)
-	openPopupTitle = "error: folder dropped"
+	openPopup("error: folder dropped")
 end
 
 function st:filedropped(file)
 	local path = file:getFilename()
 	if string.sub(path, -4, -1) ~= ".zip" then
 		print("not a valid zip file: " .. path)
-		openPopupTitle = "error: invalid file dropped"
+		openPopup("error: invalid file type dropped")
 		return
 	end
 
@@ -99,7 +117,7 @@ function st:filedropped(file)
 		
 		if not modFolder then
 			print("couldn't find mod.json in zip file: " .. path)
-			openPopupTitle = "error: couldn't identify mod"
+			openPopup("error: no mod.json found")
 			love.filesystem.unmount(path)
 			return
 		end
@@ -107,14 +125,15 @@ function st:filedropped(file)
 		local fullPath = modsPath..modFolder
 
 		if love.filesystem.getInfo(fullPath) then
-			openPopupTitle = "error: mod already exists"
+			openPopup("error: mod already exists", {modFolder = modFolder})
 			love.filesystem.unmount(path)
 			return
 		end
 
 		love.filesystem.createDirectory(fullPath)
 		helpers.recursiveFolderCopy(fullPath, "draganddrop".."/"..modFolder)
-		openPopupTitle = "new mod added"		
+		local modData = dpf.loadJson(fullPath.."/".."mod.json")
+		openPopup("new mod added", modData)
 		love.filesystem.unmount(path)
 	else
 		-- I think this only happens if someone drags a completely empty zip into the game.
@@ -257,38 +276,98 @@ st:setFgDraw(function(self)
 		imgui.SetItemDefaultFocus()
 	end
 
-	if openPopupTitle ~= "" then
-		imgui.OpenPopup_Str(openPopupTitle)
-		openPopupTitle = ""
+	-- popup event carried over from previous frame
+	if self.nextPopupTitle then
+		nextPopupTitle = self.nextPopupTitle
+		self.nextPopupTitle = nil
+	end
+
+	-- display the newly triggered popup
+	if nextPopupTitle ~= "" then
+		imgui.OpenPopup_Str(nextPopupTitle)
+		nextPopupTitle = ""
 		te.playOne(sounds.barely,"static",'sfx',1.5)
 	end
-	
+
+	-- copy local data into state data
+	self.popupData = nextPopupData or self.popupData
+
 	if imgui.BeginPopupModal("error: folder dropped", nil, popupFlags) then
 		popupBody("Drag and drop is not supported for folders. Please use a zip file.\nNo mod was added.")
 		imgui.EndPopup()
 	end
 
-	if imgui.BeginPopupModal("error: invalid file dropped", nil, popupFlags) then
-		popupBody("Could not identify the dropped file. Make sure you're using a .zip file.\nNo mod was added.")
+	if imgui.BeginPopupModal("error: invalid file type dropped", nil, popupFlags) then
+		popupBody("Could not identify the dropped file type. Make sure you're using a .zip file.\nNo mod was added.")
 		imgui.EndPopup()
 	end
 
-	if imgui.BeginPopupModal("error: couldn't identify mod", nil, popupFlags) then
-		popupBody([[The zip file doesn't have a mod.json where we expected one to be.
-Make sure that your file has the following structure: modFile.zip/folder-name/mod.json
-No mod was added.]])
+	if imgui.BeginPopupModal("error: no mod.json found", nil, popupFlags) then
+		popupBody("The zip file doesn't have a mod.json where we expected one to be.\n"..
+				"Make sure that your file has the following structure: modFile.zip/folder-name/mod.json\n"..
+				"No mod was added.")
 		imgui.EndPopup()
 	end
 
 	if imgui.BeginPopupModal("error: mod already exists", nil, popupFlags) then
-		popupBody([[A mod with this folder name is already present.
-If you're trying to update, please remove the previous version from your Mods directory.
-No mod was added.]])
+		popupBody("A mod with the folder name '"..self.popupData.modFolder.."' is already present.\n"..
+				"If you're trying to update, please remove the previous version from your Mods directory.\n"..
+				"No mod was added.")
 		imgui.EndPopup()
 	end
 
 	if imgui.BeginPopupModal("new mod added", nil, popupFlags) then
-		popupBody("The mod has been added successfully!\nRestart the game for the mod to take effect.")
+		popupBody("The following mod has been added successfully: " ..
+				self.popupData.name .. " (" .. self.popupData.version .. ") by " .. self.popupData.author 
+				.."\nRestart the game for the mod to take effect.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("config reset confirmation", nil, popupFlags) then
+		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
+			imgui.CloseCurrentPopup()
+		end
+
+		imgui.Text("Are you sure, you want to reset the config of '" .. self.popupData.name .. "'?\n!! THIS CAN'T BE UNDONE !!")
+
+		imgui.Separator()
+		if imgui.Button("Yes") then
+			self.popupData.configPath = self.popupData.path .. "/config.json"
+
+			if not love.filesystem.getInfo(self.popupData.configPath) then
+				openPopupNextFrame(self, "error: no config.json found", self.popupData)
+			end
+			
+			local success = love.filesystem.remove(self.popupData.configPath)
+			if success then
+				openPopupNextFrame(self, "successfully reset config", self.popupData)
+			else
+				openPopupNextFrame(self, "error: failed to delete config.json", self.popupData)
+			end
+		end
+
+		imgui.SameLine()
+		if imgui.Button("No") then
+			imgui.CloseCurrentPopup()
+		end
+		
+		imgui.SetItemDefaultFocus()
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("error: no config.json found", nil, popupFlags) then
+		popupBody("No config file found at: " .. self.popupData.configPath)
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("successfully reset config", nil, popupFlags) then
+		popupBody("Config of '" .. self.popupData.name .. "' has been set to default.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("error: failed to delete config.json", nil, popupFlags) then
+		popupBody("Failed to delete config file: " .. self.popupData.configPath .."\n"..
+				"Make sure that you don't have the file open in another program.")
 		imgui.EndPopup()
 	end
 
