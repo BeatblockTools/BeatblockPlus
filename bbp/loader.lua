@@ -257,19 +257,23 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 
 		-- load states
 		bbp.utils.loopFiles({}, mod.path .. "/states", function(_, path, fileName)
+			print("[BB+] injecting state " .. path .. "...")
 			bs.fromPath(fileName, path)
 			if bs.states[fileName] then
-				print("[BB+] injecting state " .. path .. "...")
 				setModChunkEnvironment(bs.states[fileName], mod)
+			else
+				print("[BB+] failed to inject state " .. path)
 			end
 		end)
 
 		-- load entities
 		bbp.utils.loopFiles({}, mod.path .. "/entities", function(_, path, fileName)
+			print("[BB+] injecting entity " .. path .. "...")
 			local chunk = love.filesystem.load(path)
 			if chunk then
-				print("[BB+] injecting entity " .. path .. "...")
 				em.entities[fileName] = setModChunkEnvironment(chunk, mod)()
+			else
+				print("[BB+] failed to inject entity " .. path)
 			end
 		end)
 
