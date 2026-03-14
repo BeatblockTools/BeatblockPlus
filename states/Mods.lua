@@ -33,7 +33,7 @@ local function openPopupNextFrame(self, title, data)
 	self.nextPopupData = data or {}
 end
 
-local function renderModConfig(mod)
+local function renderModConfig(self, mod)
 	imgui.TextWrapped(mod.name .. " (" .. mod.version .. ") by " .. mod.author)
 	imgui.TextWrapped(mod.description)
 	imgui.Separator()
@@ -43,20 +43,39 @@ local function renderModConfig(mod)
 		mod.enabled = helpers.InputBool("Enabled (Requires Restart)", mod.enabled)
 	end
 
+	if imgui.Button("Reset Config to Default") then
+		openPopup("reset config confirmation", {name = mod.name, path = mod.path, id = mod.id})
+	end
+
+	imgui.SameLine()
+
+	if imgui.Button("Delete Mod") then
+		openPopup("delete mod confirmation", {name = mod.name, path = mod.path, id = mod.id})
+	end	
+	
+	if imgui.Button("Save Changes") then
+		self.savedConfigDisplayTimer = love.timer.getTime()
+		dpf.saveJson(mod.path .. "/config.json", mod.config)
+	end
+	
+	-- display some text next to the button for one second, so that the user knows that it worked
+	if self.savedConfigDisplayTimer then
+		if love.timer.getTime() - self.savedConfigDisplayTimer > 1 then
+			self.savedConfigDisplayTimer = nil --one second is over
+		else
+			imgui.SameLine()
+			imgui.Text("Saved!")
+		end
+	end
+	
+	imgui.Separator()
+
 	-- if the mod has a config.lua file, use that to render the config gui
 	-- else generate it automatically
 	if mod.configRenderer then
 		mod.configRenderer()
 	else
 		generateConfig(mod.config)
-	end
-
-	if imgui.Button("Save Config") then
-		dpf.saveJson(mod.path .. "/config.json", mod.config)
-	end
-
-	if imgui.Button("Reset to Default Config") then
-		openPopup("config reset confirmation", {name = mod.name, path = mod.path, id = mod.id})
 	end
 end
 
@@ -241,7 +260,7 @@ st:setFgDraw(function(self)
 
 	-- start a new child for config because imgui likes to break everything otherwise
 	imgui.BeginChild_Str("mod_config_" .. self.selectedModId, imgui.ImVec2_Float(0, 0), false)
-	renderModConfig(bbp.mods[self.selectedModId])
+	renderModConfig(self, bbp.mods[self.selectedModId])
 	imgui.EndChild()
 
 	imgui.EndChild() -- end mod list and config
@@ -323,7 +342,7 @@ st:setFgDraw(function(self)
 		imgui.EndPopup()
 	end
 
-	if imgui.BeginPopupModal("config reset confirmation", nil, popupFlags) then
+	if imgui.BeginPopupModal("reset config confirmation", nil, popupFlags) then
 		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
 			imgui.CloseCurrentPopup()
 		end
@@ -373,6 +392,11 @@ st:setFgDraw(function(self)
 	if imgui.BeginPopupModal("error: failed to delete config.json", nil, popupFlags) then
 		popupBody("Failed to delete config file: " .. self.popupData.configPath .."\n"..
 				"Make sure that you don't have the file open in another program.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("delete mod confirmation", nil, popupFlags) then
+		popupBody("Are you sure, you want to delete '" .. self.popupData.name .. "'?\n!! THIS CAN'T BE UNDONE !!")
 		imgui.EndPopup()
 	end
 
