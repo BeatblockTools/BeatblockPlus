@@ -266,7 +266,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 
 		-- load entities
 		bbp.utils.loopFiles({}, mod.path .. "/entities", function(_, path, fileName)
-			local chunk = love.filesystem.load(path .. fileName)
+			local chunk = love.filesystem.load(path)
 			if chunk then
 				print("[BB+] injecting entity " .. path .. "...")
 				em.entities[fileName] = setModChunkEnvironment(chunk, mod)()
