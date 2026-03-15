@@ -214,7 +214,7 @@ st:setFgDraw(function(self)
 	imgui.SetWindowFontScale(1)
 	imgui.Separator()
 
-	imgui.BeginChild_Str("mod_list_and_config", imgui.ImVec2_Float(windowWidth, windowHeight - 90), 0)
+	imgui.BeginChild_Str("mod_list_and_config", imgui.ImVec2_Float(windowWidth -20, windowHeight - 90), 0)
 
 	imgui.Columns(2, "main", true)
 	imgui.SetColumnWidth(imgui.GetColumnIndex(), windowWidth * 0.6)
