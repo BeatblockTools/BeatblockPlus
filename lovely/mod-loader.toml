@@ -45,6 +45,20 @@ position = "after"
 payload = '''bbp = require("bbp")'''
 match_indent = true
 
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = "log:initFile()"
+position = "after"
+payload = '''
+-- log.defineEnvironment seems to be broken, so we'll have to do it ourselves
+for _, env in pairs({ {"BBP",2,0}, {"BBP_silent",0,0} }) do
+	log.display[env[1]] = env[2]
+	log.save[env[1]] = env[3]
+end
+'''
+match_indent = true
+
 # load mods near the end of love.load
 [[patches]]
 [patches.pattern]
@@ -77,9 +91,9 @@ function basestate.fromPath(name, path)
 	local errormsg
 	basestate.states[name], errormsg = love.filesystem.load(source)
 	if errormsg then
-		print("[BBP] couldn't load state " .. name .. ". Error: " .. errormsg)
+		log("couldn't load state " .. name .. ". Error: " .. errormsg, "BBP")
 	else
-		print("[BBP] made state " .. name)
+		log("made state " .. name, "BBP")
 	end
 end
 '''
