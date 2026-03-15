@@ -26,7 +26,7 @@ for _, modFolder in ipairs(love.filesystem.getDirectoryItems("Mods")) do
 		if love.filesystem.getInfo(eventsPath, 'directory') then
 			findFiles(eventsPath)
 			table.insert(customEvents, eventsPath)
-			print("[BBP] Finding events inside " .. eventsPath)
+			log("Finding events inside " .. eventsPath, "BBP_silent")
 		end
 	end
 end

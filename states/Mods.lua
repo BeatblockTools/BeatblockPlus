@@ -125,7 +125,7 @@ end
 function st:filedropped(file)
 	local path = file:getFilename()
 	if string.sub(path, -4, -1) ~= ".zip" then
-		print("not a valid zip file: " .. path)
+		log("Error: not a valid zip file: " .. path, "BBP")
 		openPopup("error: invalid file type dropped")
 		return
 	end
@@ -135,7 +135,7 @@ function st:filedropped(file)
 		local modFolder = findModFolder("draganddrop")
 		
 		if not modFolder then
-			print("couldn't find mod.json in zip file: " .. path)
+			log("Error: couldn't find mod.json in zip file: " .. path, "BBP")
 			openPopup("error: no mod.json found")
 			love.filesystem.unmount(path)
 			return
@@ -156,7 +156,7 @@ function st:filedropped(file)
 		love.filesystem.unmount(path)
 	else
 		-- I think this only happens if someone drags a completely empty zip into the game.
-		print("didn't mount draganddrop directory")
+		log("Error: didn't mount draganddrop directory", "BBP")
 		return
 	end
 end

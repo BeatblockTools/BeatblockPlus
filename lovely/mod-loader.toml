@@ -93,7 +93,7 @@ function basestate.fromPath(name, path)
 	if errormsg then
 		log("couldn't load state " .. name .. ". Error: " .. errormsg, "BBP")
 	else
-		log("made state " .. name, "BBP")
+		log("made state " .. name)
 	end
 end
 '''
