@@ -77,9 +77,9 @@ function basestate.fromPath(name, path)
 	local errormsg
 	basestate.states[name], errormsg = love.filesystem.load(source)
 	if errormsg then
-		print("[BB+] couldn't load state " .. name .. ". Error: " .. errormsg)
+		print("[BBP] couldn't load state " .. name .. ". Error: " .. errormsg)
 	else
-		print("[BB+] made state " .. name)
+		print("[BBP] made state " .. name)
 	end
 end
 '''

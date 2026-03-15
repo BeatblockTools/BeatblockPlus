@@ -41,17 +41,17 @@ function utils.moveDirectory(source, target)
 end
 
 -- Recursively loops all files in a directory and calls the callback function for each file.
--- This is used in BB+ for injecting assets, example usage:
+-- This is used in BBP for injecting assets, example usage:
 --
 -- loopFiles(sprites, assetsPath .. "/textures", function(tbl, path, fileName)
---   print("[BB+] injecting sprite " .. path .. "...")
+--   print("[BBP] injecting sprite " .. path .. "...")
 -- 	 tbl[fileName] = love.graphics.newImage(path) <--- tbl refers to the 'sprites' table
 -- end)
 --
 -- If you don't need a table, you can pass an empty table, for example:
 --
 -- loopFiles({}, mod.path .. "/states", function(_, path, fileName)
--- 	 print("[BB+] injecting state " .. path .. "...")
+-- 	 print("[BBP] injecting state " .. path .. "...")
 -- 	 bs.fromPath(fileName, path)
 -- 	 if bs.states[fileName] then
 --     setModChunkEnvironment(bs.states[fileName], mod)
