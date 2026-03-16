@@ -22,8 +22,9 @@ payload = '''
 for _, modFolder in ipairs(love.filesystem.getDirectoryItems("Mods")) do
 	local modPath = "Mods/" .. modFolder
 	if love.filesystem.getInfo(modPath, 'directory') then
+		local nolovelyignore = love.filesystem.getInfo(modPath .. "/.nolovelyignore", 'file')
 		local eventsPath = modPath .. "/events/"
-		if love.filesystem.getInfo(eventsPath, 'directory') then
+		if nolovelyignore and love.filesystem.getInfo(eventsPath, 'directory') then
 			findFiles(eventsPath)
 			table.insert(customEvents, eventsPath)
 			log("Finding events inside " .. eventsPath, "BBP_silent")
