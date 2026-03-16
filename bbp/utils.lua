@@ -100,7 +100,9 @@ function utils.getModList()
 	local modList = {}
 
 	for _, mod in pairs(bbp.mods) do
-		table.insert(modList, "  - " .. mod.name .. " (" .. mod.version .. ") by " .. mod.author)
+		if mod.enabled then
+			table.insert(modList, "  - " .. mod.name .. " (" .. mod.version .. ") by " .. mod.author)
+		end
 	end
 
 	return table.concat(modList, "\n")
