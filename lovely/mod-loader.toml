@@ -51,11 +51,8 @@ target = "main.lua"
 pattern = "log:initFile()"
 position = "after"
 payload = '''
--- log.defineEnvironment seems to be broken, so we'll have to do it ourselves
-for _, env in pairs({ {"BBP",2,0}, {"BBP_silent",0,0} }) do
-	log.display[env[1]] = env[2]
-	log.save[env[1]] = env[3]
-end
+log:defineEnvironment("BBP",2,0)
+log:defineEnvironment("BBP_silent",0,0)
 '''
 match_indent = true
 
