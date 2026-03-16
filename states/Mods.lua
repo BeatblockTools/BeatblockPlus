@@ -279,7 +279,12 @@ st:setFgDraw(function(self)
 
 	--popups
 
-	local popupFlags = bit.bor(imgui.ImGuiWindowFlags_AlwaysAutoResize, imgui.ImGuiWindowFlags_NoResize, imgui.ImGuiWindowFlags_NoMove, imgui.ImGuiCond_Always)
+	local popupFlags = bit.bor(
+			imgui.ImGuiWindowFlags_AlwaysAutoResize,
+			imgui.ImGuiWindowFlags_NoResize,
+			imgui.ImGuiWindowFlags_NoMove,
+			imgui.ImGuiWindowFlags_NoSavedSettings
+		)
 
 	local function popupBody(text)
 		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
