@@ -46,12 +46,13 @@ local function renderModConfig(self, mod)
 	if imgui.Button("Reset Config to Default") then
 		openPopup("reset config confirmation", {name = mod.name, path = mod.path, id = mod.id})
 	end
-
-	imgui.SameLine()
-
-	if imgui.Button("Delete Mod") then
-		openPopup("delete mod confirmation", {name = mod.name, path = mod.path, id = mod.id})
-	end	
+	
+	if mod.id ~= "beatblock-plus" then
+		imgui.SameLine()
+		if imgui.Button("Delete Mod") then
+			openPopup("delete mod confirmation", {name = mod.name, path = mod.path, id = mod.id})
+		end
+	end
 	
 	if imgui.Button("Save Changes") then
 		self.savedConfigDisplayTimer = love.timer.getTime()
@@ -347,9 +348,10 @@ st:setFgDraw(function(self)
 			imgui.CloseCurrentPopup()
 		end
 
-		imgui.Text("Are you sure, you want to reset the config of '" .. self.popupData.name .. "'?\n!! THIS CAN'T BE UNDONE !!")
+		imgui.Text("Are you sure, you want to reset the config of '" .. self.popupData.name .. "' ?\n!! THIS CAN'T BE UNDONE !!")
 
 		imgui.Separator()
+
 		if imgui.Button("Yes") then
 			self.popupData.configPath = self.popupData.path .. "/config.json"
 
@@ -396,7 +398,41 @@ st:setFgDraw(function(self)
 	end
 
 	if imgui.BeginPopupModal("delete mod confirmation", nil, popupFlags) then
-		popupBody("Are you sure, you want to delete '" .. self.popupData.name .. "'?\n!! THIS CAN'T BE UNDONE !!")
+		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
+			imgui.CloseCurrentPopup()
+		end
+
+		imgui.Text("Are you sure, you want to delete '" .. self.popupData.name .. "' ?\n"..
+				"Mod path: " .. self.popupData.path .. "\n!! THIS CAN'T BE UNDONE !!")
+
+		imgui.Separator()
+
+		if imgui.Button("Yes") then
+			bbp.utils.deleteDirectory(self.popupData.path)
+			if not love.filesystem.getInfo(self.popupData.path) then
+				openPopupNextFrame(self, "successfully deleted mod", self.popupData)
+			else
+				openPopupNextFrame(self, "error: failed to delete mod", self.popupData)
+			end
+		end
+
+		imgui.SameLine()
+		if imgui.Button("No") then
+			imgui.CloseCurrentPopup()
+		end
+		
+		imgui.SetItemDefaultFocus()
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("successfully deleted mod", nil, popupFlags) then
+		popupBody("The mod '" .. self.popupData.name .. "' has been deleted.\nPlease restart the game.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("error: failed to delete mod", nil, popupFlags) then
+		popupBody("Failed to fully delete mod folder: " .. self.popupData.path .."\n"..
+				"Make sure that you don't have any files from the folder open in another program.")
 		imgui.EndPopup()
 	end
 
