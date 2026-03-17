@@ -96,6 +96,56 @@ local function setModEnabled(mod, enabled)
 	rawset(mod, '_enabled', enabled)
 end
 
+function loader.deleteOldLogs()
+	if not mods then
+		log("mods table not found. no logs deleted","BBP")
+		return
+	end
+
+	log("deleting old log files...", "BBP_silent")
+
+	local start = love.timer.getTime()
+	local deletedCount = 0
+
+	local function deleteHere(path, keep)
+		local files = {}
+		for i, item in ipairs(love.filesystem.getDirectoryItems(path)) do
+			local fullPath = path.."/"..item
+			local info = love.filesystem.getInfo(fullPath)
+			if info.type == "file" and info.modtime then
+				files[i] = {fullPath = fullPath, modtime = info.modtime}
+			end
+		end
+		table.sort(files, function(a, b)
+			return a.modtime > b.modtime
+		end)
+		for i, file in ipairs(files) do
+			if i > keep then
+				love.filesystem.remove(file.fullPath)
+				log("deleted "..file.fullPath,"BBP_silent")
+				deletedCount = deletedCount +1
+			end
+		end
+	end
+
+	local config = mods["beatblock-plus"].config
+
+	if config.delete.crashreports then
+		deleteHere("crashreports", config.keep.crashreports)
+	end
+
+	if config.delete.logs then
+		deleteHere("logs", config.keep.logs)
+	end
+
+	if config.delete.lovelylog then
+		deleteHere("Mods/lovely/log", config.keep.lovelylog)
+	end
+
+	local duration = love.timer.getTime() - start
+	log("took "..duration.." seconds to delete "..deletedCount.." old log files", "BBP_silent")
+end
+
 function loader.loadMods() -- loads mod data, assets, mod icons etc.
 	loader.mods = {}
 

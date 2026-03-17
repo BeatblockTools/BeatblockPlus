@@ -9,12 +9,12 @@
 		"delete": {
 			"crashreports": true,
 			"logs": true,
-			"lovelylogs": true
+			"lovelylog": true
 		},
 		"keep": {
 			"crashreports": 20,
 			"logs": 20,
-			"lovelylogs": 20
+			"lovelylog": 20
 		}
 	}
 }

@@ -10,37 +10,31 @@ imgui.SameLine(250)
 imgui.Text("how many can stay?")
 
 cfg.delete.crashreports = helpers.InputBool("Beatblock / crashreports", cfg.delete.crashreports)
--- imgui.SameLine()
--- imgui.Text(" |  ")
 if cfg.delete.crashreports then
     imgui.SameLine(250)
     imgui.SetNextItemWidth(100)
     cfg.keep.crashreports = helpers.InputInt("", cfg.keep.crashreports)
-    cfg.keep.crashreports = math.max(0, cfg.keep.crashreports)
+    cfg.keep.crashreports = math.max(1, cfg.keep.crashreports)
 else
     cfg.delete.crashreports = false
 end
 
 cfg.delete.logs = helpers.InputBool("Beatblock / logs", cfg.delete.logs)
--- imgui.SameLine()
--- imgui.Text("             |  ")
 if cfg.delete.logs then
     imgui.SameLine(250)
     imgui.SetNextItemWidth(100)
     cfg.keep.logs = helpers.InputInt(" ", cfg.keep.logs)
-    cfg.keep.logs = math.max(0, cfg.keep.logs)
+    cfg.keep.logs = math.max(1, cfg.keep.logs)
 else
     cfg.delete.logs = false
 end
 
-cfg.delete.lovelylogs = helpers.InputBool("Mods / lovely / log", cfg.delete.lovelylogs)
--- imgui.SameLine()
--- imgui.Text("          |  ")
-if cfg.delete.lovelylogs then
+cfg.delete.lovelylog = helpers.InputBool("Mods / lovely / log", cfg.delete.lovelylog)
+if cfg.delete.lovelylog then
     imgui.SameLine(250)
     imgui.SetNextItemWidth(100)
-    cfg.keep.lovelylogs = helpers.InputInt("  ", cfg.keep.lovelylogs)
-    cfg.keep.lovelylogs = math.max(0, cfg.keep.lovelylogs)
+    cfg.keep.lovelylog = helpers.InputInt("  ", cfg.keep.lovelylog)
+    cfg.keep.lovelylog = math.max(1, cfg.keep.lovelylog)
 else
-    cfg.delete.lovelylogs = false
+    cfg.delete.lovelylog = false
 end

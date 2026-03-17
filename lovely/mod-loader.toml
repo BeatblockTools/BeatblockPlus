@@ -62,7 +62,10 @@ match_indent = true
 target = "main.lua"
 pattern = "cs = bs.load(project.initState)"
 position = "before"
-payload = '''bbp.loader.loadMods()'''
+payload = '''
+bbp.loader.loadMods()
+bbp.loader.deleteOldLogs()
+'''
 match_indent = true
 
 # handle error and allow custom path
