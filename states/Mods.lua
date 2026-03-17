@@ -204,7 +204,7 @@ st:setFgDraw(function(self)
 	helpers.SetNextWindowSize(windowWidth, windowHeight)
 	--												423
 	local appliedBBPTheme = false -- The following config may change mid draw call
-	if mod.config.modMenuGuiTheme then
+	if mod.config.lightMode then
 		bbp.gui.pushStyle()
 		appliedBBPTheme = true
 	end
@@ -368,9 +368,7 @@ st:setFgDraw(function(self)
 			
 			local success = love.filesystem.remove(self.popupData.configPath)
 			if success then
-				for k, v in pairs(bbp.mods[self.popupData.id].defaultConfig) do
-					bbp.mods[self.popupData.id].config[k] = v
-				end
+				bbp.mods[self.popupData.id].config = helpers.copy(bbp.mods[self.popupData.id].defaultConfig)
 				openPopupNextFrame(self, "successfully reset config", self.popupData)
 			else
 				openPopupNextFrame(self, "error: failed to delete config.json", self.popupData)
@@ -436,7 +434,7 @@ st:setFgDraw(function(self)
 	end
 
 	if imgui.BeginPopupModal("error: failed to delete mod", nil, popupFlags) then
-		popupBody("Failed to fully delete mod folder: " .. self.popupData.path .."\n"..
+		popupBody("Failed to delete mod folder: " .. self.popupData.path .."\n"..
 				"Make sure that you don't have any files from the folder open in another program.")
 		imgui.EndPopup()
 	end
