@@ -1,11 +1,11 @@
 {
-    "id": "beatblock-plus",
-    "name": "Beatblock Plus",
-    "author": "BeatblockTools",
-    "description": "Mod loader for Beatblock",
-    "version": "1.4.1",
-    "config": {
-        "lightMode": true,
+	"id": "beatblock-plus",
+	"name": "Beatblock Plus",
+	"author": "BeatblockTools",
+	"description": "Mod loader for Beatblock",
+	"version": "1.4.1",
+	"config": {
+		"lightMode": true,
 		"delete": {
 			"crashreports": true,
 			"logs": true,
@@ -16,5 +16,5 @@
 			"logs": 20,
 			"lovelylogs": 20
 		}
-    }
+	}
 }
