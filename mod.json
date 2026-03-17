@@ -5,6 +5,16 @@
     "description": "Mod loader for Beatblock",
     "version": "1.4.1",
     "config": {
-        "modMenuGuiTheme": true
+        "lightMode": true,
+		"delete": {
+			"crashreports": true,
+			"logs": true,
+			"lovelylogs": true
+		},
+		"keep": {
+			"crashreports": 20,
+			"logs": 20,
+			"lovelylogs": 20
+		}
     }
 }
