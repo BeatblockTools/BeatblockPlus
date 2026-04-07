@@ -211,7 +211,9 @@ st:setFgDraw(function(self)
 	imgui.Begin("Mods", true, 295) -- notitlebar, noresize, nomove, nocollapse, nobackground, nosavedsettings
 
 	imgui.SetWindowFontScale(2)
-	imgui.Text("Mods (" .. countTable(bbp.mods) .. ")")
+	imgui.Text("Mods: " .. countTable(bbp.mods))
+	imgui.SameLine(200)
+	imgui.Text("To install a mod, drag and drop the zip file into this menu.")
 	imgui.SetWindowFontScale(1)
 	imgui.Separator()
 
@@ -273,7 +275,7 @@ st:setFgDraw(function(self)
 
 	imgui.SameLine()
 
-	if imgui.Button("Open Folder") then
+	if imgui.Button("Open Mods Folder") then
 		love.system.openURL("file://" .. love.filesystem.getSaveDirectory() .. '/Mods')
 	end
 
