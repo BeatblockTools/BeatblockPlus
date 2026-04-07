@@ -275,6 +275,12 @@ st:setFgDraw(function(self)
 
 	imgui.SameLine()
 
+	if imgui.Button("Restart Game") then
+		openPopup("restart game confirmation")
+	end
+
+	imgui.SameLine()
+
 	if imgui.Button("Open Mods Folder") then
 		love.system.openURL("file://" .. love.filesystem.getSaveDirectory() .. '/Mods')
 	end
@@ -285,7 +291,8 @@ st:setFgDraw(function(self)
 			imgui.ImGuiWindowFlags_AlwaysAutoResize,
 			imgui.ImGuiWindowFlags_NoResize,
 			imgui.ImGuiWindowFlags_NoMove,
-			imgui.ImGuiWindowFlags_NoSavedSettings
+			imgui.ImGuiWindowFlags_NoSavedSettings,
+			imgui.ImGuiWindowFlags_NoTitleBar
 		)
 
 	local function popupBody(text)
@@ -438,6 +445,28 @@ st:setFgDraw(function(self)
 	if imgui.BeginPopupModal("error: failed to delete mod", nil, popupFlags) then
 		popupBody("Failed to delete mod folder: " .. self.popupData.path .."\n"..
 				"Make sure that you don't have any files from the folder open in another program.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("restart game confirmation", nil, popupFlags) then
+		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
+			imgui.CloseCurrentPopup()
+		end
+
+		imgui.Text("Are you sure, you want to restart the game?")
+
+		imgui.Separator()
+
+		if imgui.Button("Yes") then
+			love.event.quit('restart')
+		end
+
+		imgui.SameLine()
+		if imgui.Button("No") then
+			imgui.CloseCurrentPopup()
+		end
+		
+		imgui.SetItemDefaultFocus()
 		imgui.EndPopup()
 	end
 
