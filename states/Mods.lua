@@ -458,7 +458,7 @@ st:setFgDraw(function(self)
 		imgui.Separator()
 
 		if imgui.Button("Yes") then
-			love.event.quit('restart')
+			BBP_doRestart = true
 		end
 
 		imgui.SameLine()
