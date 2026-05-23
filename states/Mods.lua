@@ -56,7 +56,7 @@ local function renderModConfig(self, mod)
 	
 	if imgui.Button("Save Changes") then
 		self.savedConfigDisplayTimer = love.timer.getTime()
-		mod.saveConfig()
+		bbp.utils.saveConfig(mod.id)
 	end
 	
 	-- display some text next to the button for one second, so that the user knows that it worked

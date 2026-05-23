@@ -185,4 +185,8 @@ function utils.tableContains(table, value)
 	return false
 end
 
+function utils.saveConfig(id)
+	dpf.saveJson(mods[id].path .. "/config.json", mods[id].config)
+end
+
 return utils
