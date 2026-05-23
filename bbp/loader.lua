@@ -260,6 +260,10 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 			goto continue
 		end
 
+		function mod.saveConfig()
+			dpf.saveJson(mod.path .. "/config.json", mod.config)
+		end
+
 		-- load assets
 		local assetsPath = mod.path .. "/assets"
 		if love.filesystem.getInfo(assetsPath, 'directory') then
