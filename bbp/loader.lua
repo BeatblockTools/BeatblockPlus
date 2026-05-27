@@ -247,7 +247,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 			local modIcon = love.graphics.newImage(mod.path .. "/icon.png")
 			local width, height = modIcon:getDimensions()
 			if width ~= 73 or height ~= 33 then
-				log("Mod " .. mod.id .. " has invalid icon size. Mod icons must be 73x33.","BBP")
+				log("Mod icon of " .. mod.id .. " has invalid size. Mod icons must be 73x33.","BBP")
 			else
 				rawset(mod, "icon", modIcon)
 			end
