@@ -156,7 +156,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 	local success = love.filesystem.getInfo(modsPath, 'directory')
 
 	if not success then
-		log("Failed to find Mods directory. Mods won't be loaded.","BBP")
+		error("BBP failed to find the Mods directory.")
 		return
 	end
 
