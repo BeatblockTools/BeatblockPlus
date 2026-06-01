@@ -1,310 +1,479 @@
 local st = Gamestate:new('Mods')
 
-local function playClickSound()
-    te.play(sounds.hold, 'static', 'sfx', 0.3)
-end
-
-local function moveDirectory(source, target)
-    love.filesystem.createDirectory(target)
-
-    local files = love.filesystem.getDirectoryItems(source)
-    for _, file in pairs(files) do
-        local sourceFilePath = source .. file
-        local targetFilePath = target .. file
-
-        local contents = love.filesystem.read(sourceFilePath)
-        if contents then
-            local targetFile = love.filesystem.newFile(targetFilePath)
-            targetFile:open("w")
-            targetFile:write(contents)
-            targetFile:flush()
-            love.filesystem.remove(sourceFilePath)
-        end
-    end
-
-    love.filesystem.remove(source)
-end
-
 -- used to automatically render a config if the mod doesn't have a config.lua file
 local function generateConfig(config)
-    for k, v in pairs(config) do
-        if type(v) == "table" then
-            imgui.Separator()
-            imgui.TextWrapped(k)
-            generateConfig(v)
-            imgui.Separator()
-        elseif type(v) == "number" then
-            config[k] = helpers.InputFloat(k, v)
-        elseif type(v) == "string" then
-            config[k] = helpers.InputText(k, v)
-        elseif type(v) == "boolean" then
-            config[k] = helpers.InputBool(k, v)
-        end
-    end
+	for k, v in pairs(config) do
+		if type(v) == "table" then
+			imgui.Separator()
+			imgui.TextWrapped(k)
+			generateConfig(v)
+			imgui.Separator()
+		elseif type(v) == "number" then
+			config[k] = helpers.InputFloat(k, v)
+		elseif type(v) == "string" then
+			config[k] = helpers.InputText(k, v)
+		elseif type(v) == "boolean" then
+			config[k] = helpers.InputBool(k, v)
+		end
+	end
 end
 
-local function loadConfigRenderer(mod, path)
-    local chunk, errormsg = love.filesystem.load(path)
-    if errormsg then
-        print("[BB+] Error while loading the config renderer of " .. mod.name .. ". " .. errormsg)
-    else
-        local env = setmetatable({ mod = mod }, { __index = _G })
-        return setfenv(chunk, env)
-    end
+-- I'm so sorry for using a string for control flow, but it's the best solution I could find.
+local nextPopupTitle = ""
+local nextPopupData = {}
+
+local function openPopup(title, data)
+	nextPopupTitle = title
+	nextPopupData = data or {}
 end
 
-local function renderModConfig(mod)
-    imgui.TextWrapped(mod.name .. " (" .. mod.version .. ") by " .. mod.author)
-    imgui.TextWrapped(mod.description)
-    imgui.Separator()
+local function openPopupNextFrame(self, title, data)
+	-- opening a popup from within another popup has to be delayed to the next frame
+	self.nextPopupTitle = title
+	self.nextPopupData = data or {}
+end
 
-    -- toggle for the mod
-    if mod.id ~= "BeatblockPlus" then
-        local enabledPtr = ffi.new("bool[1]", mod.enabled)
-        if imgui.Checkbox("Enabled (Requires Restart)", enabledPtr) then
-            mod.enabled = enabledPtr[0]
+local function renderModConfig(self, mod)
+	imgui.TextWrapped(mod.name .. " (" .. mod.version .. ") by " .. mod.author)
+	imgui.TextWrapped(mod.description)
+	imgui.Separator()
 
-            local modPath = "Mods/" .. mod.id .. "/lovely/"
-            local disabledPath = "Mods/disabled/" .. mod.id .. "/lovely/"
+	-- toggle for the mod
+	if mod.id ~= "beatblock-plus" then
+		mod.enabled = helpers.InputBool("Enabled (Requires Restart)", mod.enabled)
+	end
 
-            if mod.enabled then
-                moveDirectory(disabledPath, modPath)
-            else
-                moveDirectory(modPath, disabledPath)
-            end
-        end
-    end
+	if imgui.Button("Reset Config to Default") then
+		openPopup("reset config confirmation", {name = mod.name, path = mod.path, id = mod.id})
+	end
+	
+	if mod.id ~= "beatblock-plus" then
+		imgui.SameLine()
+		if imgui.Button("Delete Mod") then
+			openPopup("delete mod confirmation", {name = mod.name, path = mod.path, id = mod.id})
+		end
+	end
+	
+	if imgui.Button("Save Changes") then
+		self.savedConfigDisplayTimer = love.timer.getTime()
+		bbp.utils.saveConfig(mod.id)
+	end
+	
+	-- display some text next to the button for one second, so that the user knows that it worked
+	if self.savedConfigDisplayTimer then
+		if love.timer.getTime() - self.savedConfigDisplayTimer > 1 then
+			self.savedConfigDisplayTimer = nil --one second is over
+		else
+			imgui.SameLine()
+			imgui.Text("Saved!")
+		end
+	end
+	
+	imgui.Separator()
 
-    -- if the mod has a config.lua file, use that to render the config gui
-    -- else generate it automatically
-    local configPath = "Mods/" .. mod.id .. "/config.lua"
-
-    -- if there is a config.lua file but the renderer isn't loaded already, load it
-    if not mod.configRenderer and love.filesystem.getInfo(configPath) then
-        mod.configRenderer = loadConfigRenderer(mod, configPath)
-    end
-
-    if mod.configRenderer then
-        mod.configRenderer()
-    else
-        generateConfig(mod.config)
-    end
-
-    if imgui.Button("Save Changes") then
-        local modData = {
-            id = mod.id,
-            name = mod.name,
-            author = mod.author,
-            description = mod.description,
-            version = mod.version,
-            enabled = mod.enabled,
-            config = mod.config
-        }
-        dpf.saveJson("Mods/" .. mod.id .. "/mod.json", modData)
-    end
+	-- if the mod has a config.lua file, use that to render the config gui
+	-- else generate it automatically
+	if mod.configRenderer then
+		mod.configRenderer()
+	else
+		generateConfig(mod.config)
+	end
 end
 
 -- I don't know if there is a way without this
 local function countTable(tbl)
-    local count = 0
+	local count = 0
 
-    for _, _ in pairs(tbl) do
-        count = count + 1
-    end
+	for _, _ in pairs(tbl) do
+		count = count + 1
+	end
 
-    return count
+	return count
 end
 
 st.loadMainMenu = function(self)
-    cs = bs.load('Menu')
-    self.menuMusicManager:clearOnBeatHooks()
-    cs.menuMusicManager = self.menuMusicManager
-    cs:init()
+	cs = bs.load('Menu')
+	self.menuMusicManager:clearOnBeatHooks()
+	cs.menuMusicManager = self.menuMusicManager
+	cs:init()
 
-    -- return to ingame cursor if the settings say so
-    if savedata.options.game.customCursorInMenu and (savedata.options.game.cursorMode ~= "default") then
-        love.mouse.setVisible(false)
-    end
+	-- return to ingame cursor if the settings say so
+	if savedata.options.game.customCursorInMenu and (savedata.options.game.cursorMode ~= "default") then
+		love.mouse.setVisible(false)
+	end
 end
 
-local function readJsonFromFile(filePath)
-    local contents = love.filesystem.read(filePath)
-    return json.decode(contents)
+-- look for directory/folder-name/mod.json and return folder-name
+local function findModFolder(directory)
+	local modFolder
+	local directoryItems = love.filesystem.getDirectoryItems(directory)
+	for _, item in pairs(directoryItems) do
+		local fileInfo = love.filesystem.getInfo(directory .. "/" .. item)
+		if fileInfo and fileInfo.type == "directory" then
+			if love.filesystem.getInfo(directory .. "/" .. item .. "/" .. "mod.json") then
+				modFolder = item
+				break
+			end
+		end
+	end
+	return modFolder
 end
 
--- recursively looks for a mod.json and returns the mod data and the parent directory, to later get rid of extra parent folders
-local function findModData(currentDirectory)
-    local modData
-    if love.filesystem.getInfo(currentDirectory .. "/mod.json", 'file') then
-        modData = readJsonFromFile(currentDirectory .. "/mod.json")
-        modData.directory = currentDirectory
-        return modData
-    else
-        local directoryItems = love.filesystem.getDirectoryItems(currentDirectory)
-        for i, filename in ipairs(directoryItems) do
-            local fileInfo = love.filesystem.getInfo(currentDirectory .. "/" .. filename)
-            if fileInfo and fileInfo.type == "directory" then
-                modData = findModData(currentDirectory .. "/" .. filename)
-                if modData.id then
-                    local topDirectory = string.match(modData.directory, "([^/]+)")
-                    if topDirectory ~= "draganddrop" then
-                        modData.directory = currentDirectory .. "/" .. modData.directory
-                    end
-                end
-                return modData
-            end
-        end
-    end
-end
-
-local function createModFolder(path)
-    if love.filesystem.mount(path, "draganddrop") then
-        local modpath = "Mods/"
-        local modData = findModData("draganddrop")
-        -- print("mounted mod files into " .. modData.directory)
-        if modData and modData.id then
-            modpath = modpath .. modData.id
-        else
-            print("no modID found")
-            return
-        end
-        if love.filesystem.getInfo(modpath) then
-            print("'Mods/" .. modData.id .. "' already exists")
-            return
-        end
-        helpers.recursiveFolderCopy(modpath, modData.directory)
-        print("copied mod files to 'Mods/" .. modData.id .. "'")
-        love.filesystem.unmount(path)
-        -- TODO add interface feedback and tell player to restart game
-    end
-end
-
--- dropped folder
 function st:directorydropped(path)
-    createModFolder(path)
+	openPopup("error: folder dropped")
 end
 
--- dropped file
 function st:filedropped(file)
-    local path = file:getFilename()
-    if string.sub(path, -4, -1) ~= ".zip" then
-        print(path .. " is not a zip file")
-        return
-    end
-    createModFolder(path)
+	local path = file:getFilename()
+	if string.sub(path, -4, -1) ~= ".zip" then
+		log("Error: not a valid zip file: " .. path, "BBP")
+		openPopup("error: invalid file type dropped")
+		return
+	end
+
+	if love.filesystem.mount(path, "draganddrop") then
+		local modsPath = "Mods/"
+		local modFolder = findModFolder("draganddrop")
+		
+		if not modFolder then
+			log("Error: couldn't find mod.json in zip file: " .. path, "BBP")
+			openPopup("error: no mod.json found")
+			love.filesystem.unmount(path)
+			return
+		end
+
+		local fullPath = modsPath..modFolder
+
+		if love.filesystem.getInfo(fullPath) then
+			openPopup("error: mod already exists", {modFolder = modFolder})
+			love.filesystem.unmount(path)
+			return
+		end
+
+		love.filesystem.createDirectory(fullPath)
+		helpers.recursiveFolderCopy(fullPath, "draganddrop".."/"..modFolder)
+		local modData = dpf.loadJson(fullPath.."/".."mod.json")
+		openPopup("new mod added", modData)
+		love.filesystem.unmount(path)
+	else
+		-- I think this only happens if someone drags a completely empty zip into the game.
+		log("Error: didn't mount draganddrop directory", "BBP")
+		return
+	end
 end
 
 st:setInit(function(self)
-    self.selectedModId = "BeatblockPlus"
+	love.keyboard.setTextInput(true)
 
-    self.sortedIDs = {}
-    local i = 0
-    for modID, _ in pairs(mods) do
-        i = i + 1
-        self.sortedIDs[i] = modID
-    end
-    -- the list contains ids, but they're sorted by name
-    table.sort(self.sortedIDs, function(a, b)
-        return mods[a].name:lower() < mods[b].name:lower()
-    end)
+	self.selectedModId = "beatblock-plus"
 
-    -- ingame cursor doesn't work in the mod menu, so we always use the regular one
-    love.mouse.setVisible(true)
+	self.sortedIDs = {}
+	local i = 0
+	for modID, _ in pairs(bbp.mods) do
+		i = i + 1
+		self.sortedIDs[i] = modID
+	end
+	-- the list contains ids, but they're sorted by name
+	table.sort(self.sortedIDs, function(a, b)
+		return bbp.mods[a].name:lower() < bbp.mods[b].name:lower()
+	end)
+
+	-- ingame cursor doesn't work in the mod menu, so we always use the regular one
+	love.mouse.setVisible(true)
 end)
 
 st:setUpdate(function(self, dt)
-    if maininput:pressed("r") then
-        local mod = mods[self.selectedModId]
-        if mod.configRenderer then
-            local configPath = "Mods/" .. mod.id .. "/config.lua"
-            mod.configRenderer = loadConfigRenderer(mod, configPath)
-        end
-
-    elseif maininput:pressed("back") then
-        self.loadMainMenu(self)
-    end
+	if maininput:pressed("r") then
+		-- clear config renderer cache
+		rawset(bbp.mods[self.selectedModId], '_configRenderer', nil)
+	elseif maininput:pressed("back") then
+		self.loadMainMenu(self)
+	end
 end)
 
 st:setBgDraw(function(self)
-    color()
-    love.graphics.rectangle('fill', 0, 0, 600, 360)
+	color()
+	love.graphics.rectangle('fill', 0, 0, 600, 360)
 end)
 
-local windowScale = 2
-local windowWidth = 600 * windowScale
-local windowHeight = 360 * windowScale
-
 st:setFgDraw(function(self)
-    helpers.SetNextWindowPos(0, 0)
-    helpers.SetNextWindowSize(windowWidth, windowHeight)
-    --												423
-    imgui.Begin("Mods", true, 295) -- notitlebar, noresize, nomove, nocollapse, nobackground, nosavedsettings
+	local windowWidth = imgui.canvasScale and (project.res.x * imgui.canvasScale) or love.graphics.getWidth()
+	local windowHeight = imgui.canvasScale and (project.res.y * imgui.canvasScale) or love.graphics.getHeight()
 
-    imgui.SetWindowFontScale(2)
-    imgui.Text("Mods (" .. countTable(mods) .. ")")
-    imgui.SetWindowFontScale(1)
-    imgui.Separator()
+	helpers.SetNextWindowPos(0, 0)
+	helpers.SetNextWindowSize(windowWidth, windowHeight)
+	--												423
+	local appliedBBPTheme = false -- The following config may change mid draw call
+	if mod.config.lightMode then
+		bbp.gui.pushStyle()
+		appliedBBPTheme = true
+	end
+	imgui.Begin("Mods", true, 295) -- notitlebar, noresize, nomove, nocollapse, nobackground, nosavedsettings
 
-    imgui.BeginChild_Str("mod_list_and_config", imgui.ImVec2_Float(windowWidth, 320 * windowScale), 0)
+	imgui.SetWindowFontScale(2)
+	imgui.Text("Mods: " .. countTable(bbp.mods))
+	imgui.SameLine(200)
+	imgui.Text("To install a mod, drag and drop the zip file into this menu.")
+	imgui.SetWindowFontScale(1)
+	imgui.Separator()
 
-    imgui.Columns(2, "main", true)
-    imgui.SetColumnWidth(imgui.GetColumnIndex(), windowWidth * 0.6)
+	imgui.BeginChild_Str("mod_list_and_config", imgui.ImVec2_Float(windowWidth -20, windowHeight - 90), 0)
 
-    -- start drawing mod boxes
-    imgui.BeginChild_Str("mod_list", imgui.ImVec2_Float(550 * windowScale, 320 * windowScale), 0)
+	imgui.Columns(2, "main", true)
+	imgui.SetColumnWidth(imgui.GetColumnIndex(), windowWidth * 0.6)
 
-    for _, modID in pairs(self.sortedIDs) do
-        local mod = mods[modID]
-        local childWidth = windowWidth * 0.59
-        local childHeight = 42 * windowScale -- just enough to fit the mod icon
-        imgui.BeginChild_Str("mod_" .. mod.id, imgui.ImVec2_Float(childWidth, childHeight), 1)
+	-- start drawing mod boxes
+	imgui.BeginChild_Str("mod_list", imgui.ImVec2_Float(550 / 600 * windowWidth, windowHeight - 90), 0)
 
-        imgui.Columns(2, "mod_details_" .. mod.id, true)
+	for _, modID in pairs(self.sortedIDs) do
+		local mod = bbp.mods[modID]
+		local childWidth = windowWidth * 0.59
+		local childHeight = 42 * 2 -- just enough to fit the mod icon
+		imgui.BeginChild_Str("mod_" .. mod.id, imgui.ImVec2_Float(childWidth, childHeight), 1)
 
-        -- mod icon
-        imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth * 0.227)
-        local imageSizeX = 73 * windowScale
-        local imageSizeY = 33 * windowScale
-        imgui.Image((modIcons[mod.id] or modIcons.unknown), imgui.ImVec2_Float(imageSizeX, imageSizeY))
-        imgui.NextColumn()
+		imgui.Columns(2, "mod_details_" .. mod.id, true)
 
-        -- mod details (name, icon, version, etc.)
-        imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth)
-        imgui.Text(mod.name .. " by " .. mod.author .. " (" .. mod.version .. ")")
-        imgui.TextWrapped(mod.description)
+		-- mod icon
+		local modIcon = mod.icon or sprites.bbp.missing
+		if modIcon then
+			imgui.SetColumnWidth(imgui.GetColumnIndex(), 82 * 2)
+			local imageSizeX = 73 * 2
+			local imageSizeY = 33 * 2
+			imgui.Image(modIcon, imgui.ImVec2_Float(imageSizeX, imageSizeY))
+			imgui.NextColumn()
+		end
 
-        -- show config when clicked
-        if imgui.IsWindowHovered() and imgui.IsMouseClicked(0) then -- left click
-            self.selectedModId = mod.id
-        end
+		-- mod details (name, icon, version, etc.)
+		imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth)
+		imgui.Text(mod.name .. " by " .. mod.author .. " (" .. mod.version .. ")")
+		imgui.TextWrapped(mod.description)
 
-        imgui.EndChild() -- end mod box
-    end
+		-- show config when clicked
+		if imgui.IsWindowHovered() and imgui.IsMouseClicked(0) then -- left click
+			self.selectedModId = mod.id
+		end
 
-    imgui.EndChild() -- end mod list
+		imgui.EndChild() -- end mod box
+	end
 
-    imgui.NextColumn()
-    imgui.SetColumnWidth(imgui.GetColumnIndex(), windowWidth * 0.39)
+	imgui.EndChild() -- end mod list
 
-    -- start a new child for config because imgui likes to break everything otherwise
-    imgui.BeginChild_Str("mod_config_" .. self.selectedModId, imgui.ImVec2_Float(0, 0), false)
-    renderModConfig(mods[self.selectedModId])
-    imgui.EndChild()
+	imgui.NextColumn()
+	imgui.SetColumnWidth(imgui.GetColumnIndex(), windowWidth * 0.39)
 
-    imgui.EndChild() -- end mod list and config
-    imgui.Separator()
+	-- start a new child for config because imgui likes to break everything otherwise
+	imgui.BeginChild_Str("mod_config_" .. self.selectedModId, imgui.ImVec2_Float(0, 0), false)
+	renderModConfig(self, bbp.mods[self.selectedModId])
+	imgui.EndChild()
 
-    if imgui.Button("Go Back") then
-        self.loadMainMenu(self)
-    end
+	imgui.EndChild() -- end mod list and config
+	imgui.Separator()
 
-    imgui.SameLine()
+	if imgui.Button("Go Back") then
+		self.loadMainMenu(self)
+	end
 
-    if imgui.Button("Open Folder") then
-        love.system.openURL("file://" .. love.filesystem.getSaveDirectory() .. '/Mods')
-    end
+	imgui.SameLine()
 
-    imgui.End()
+	if imgui.Button("Restart Game") then
+		openPopup("restart game confirmation")
+	end
+
+	imgui.SameLine()
+
+	if imgui.Button("Open Mods Folder") then
+		love.system.openURL("file://" .. love.filesystem.getSaveDirectory() .. '/Mods')
+	end
+
+	--popups
+
+	local popupFlags = bit.bor(
+			imgui.ImGuiWindowFlags_AlwaysAutoResize,
+			imgui.ImGuiWindowFlags_NoResize,
+			imgui.ImGuiWindowFlags_NoMove,
+			imgui.ImGuiWindowFlags_NoSavedSettings,
+			imgui.ImGuiWindowFlags_NoTitleBar
+		)
+
+	local function popupBody(text)
+		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
+			imgui.CloseCurrentPopup()
+		end
+
+		imgui.Text(text)
+
+		imgui.Separator()
+		if imgui.Button("OK") then
+			imgui.CloseCurrentPopup()
+		end
+		
+		imgui.SetItemDefaultFocus()
+	end
+
+	-- popup event carried over from previous frame
+	if self.nextPopupTitle then
+		nextPopupTitle = self.nextPopupTitle
+		self.nextPopupTitle = nil
+	end
+
+	-- display the newly triggered popup
+	if nextPopupTitle ~= "" then
+		imgui.OpenPopup_Str(nextPopupTitle)
+		nextPopupTitle = ""
+		te.playOne(sounds.barely,"static",'sfx',1.5)
+	end
+
+	-- copy local data into state data
+	self.popupData = nextPopupData or self.popupData
+
+	if imgui.BeginPopupModal("error: folder dropped", nil, popupFlags) then
+		popupBody("Drag and drop is not supported for folders. Please use a zip file.\nNo mod was added.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("error: invalid file type dropped", nil, popupFlags) then
+		popupBody("Could not identify the dropped file type. Make sure you're using a .zip file.\nNo mod was added.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("error: no mod.json found", nil, popupFlags) then
+		popupBody("The zip file doesn't have a mod.json where we expected one to be.\n"..
+				"Make sure that your file has the following structure: modFile.zip/folder-name/mod.json\n"..
+				"No mod was added.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("error: mod already exists", nil, popupFlags) then
+		popupBody("A mod with the folder name '"..self.popupData.modFolder.."' is already present.\n"..
+				"If you're trying to update, please remove the previous version from your Mods directory.\n"..
+				"No mod was added.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("new mod added", nil, popupFlags) then
+		popupBody("The following mod has been added successfully: " ..
+				self.popupData.name .. " (" .. self.popupData.version .. ") by " .. self.popupData.author 
+				.."\nRestart the game for the mod to take effect.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("reset config confirmation", nil, popupFlags) then
+		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
+			imgui.CloseCurrentPopup()
+		end
+
+		imgui.Text("Are you sure, you want to reset the config of '" .. self.popupData.name .. "' ?\n!! THIS CAN'T BE UNDONE !!")
+
+		imgui.Separator()
+
+		if imgui.Button("Yes") then
+			self.popupData.configPath = self.popupData.path .. "/config.json"
+
+			if not love.filesystem.getInfo(self.popupData.configPath) then
+				openPopupNextFrame(self, "error: no config.json found", self.popupData)
+			end
+
+			dpf.saveJson(self.popupData.configPath, mod.config)
+			
+			local success = love.filesystem.remove(self.popupData.configPath)
+			if success then
+				bbp.mods[self.popupData.id].config = helpers.copy(bbp.mods[self.popupData.id].defaultConfig)
+				openPopupNextFrame(self, "successfully reset config", self.popupData)
+			else
+				openPopupNextFrame(self, "error: failed to delete config.json", self.popupData)
+			end
+		end
+
+		imgui.SameLine()
+		if imgui.Button("No") then
+			imgui.CloseCurrentPopup()
+		end
+		
+		imgui.SetItemDefaultFocus()
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("error: no config.json found", nil, popupFlags) then
+		popupBody("No config file found at: " .. self.popupData.configPath)
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("successfully reset config", nil, popupFlags) then
+		popupBody("Config of '" .. self.popupData.name .. "' has been set to default.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("error: failed to delete config.json", nil, popupFlags) then
+		popupBody("Failed to delete config file: " .. self.popupData.configPath .."\n"..
+				"Make sure that you don't have the file open in another program.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("delete mod confirmation", nil, popupFlags) then
+		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
+			imgui.CloseCurrentPopup()
+		end
+
+		imgui.Text("Are you sure, you want to delete '" .. self.popupData.name .. "' ?\n"..
+				"Mod path: " .. self.popupData.path .. "\n!! THIS CAN'T BE UNDONE !!")
+
+		imgui.Separator()
+
+		if imgui.Button("Yes") then
+			bbp.utils.deleteDirectory(self.popupData.path)
+			if not love.filesystem.getInfo(self.popupData.path) then
+				openPopupNextFrame(self, "successfully deleted mod", self.popupData)
+			else
+				openPopupNextFrame(self, "error: failed to delete mod", self.popupData)
+			end
+		end
+
+		imgui.SameLine()
+		if imgui.Button("No") then
+			imgui.CloseCurrentPopup()
+		end
+		
+		imgui.SetItemDefaultFocus()
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("successfully deleted mod", nil, popupFlags) then
+		popupBody("The mod '" .. self.popupData.name .. "' has been deleted.\nPlease restart the game.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("error: failed to delete mod", nil, popupFlags) then
+		popupBody("Failed to delete mod folder: " .. self.popupData.path .."\n"..
+				"Make sure that you don't have any files from the folder open in another program.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("restart game confirmation", nil, popupFlags) then
+		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
+			imgui.CloseCurrentPopup()
+		end
+
+		imgui.Text("Are you sure, you want to restart the game?")
+
+		imgui.Separator()
+
+		if imgui.Button("Yes") then
+			BBP_doRestart = true
+		end
+
+		imgui.SameLine()
+		if imgui.Button("No") then
+			imgui.CloseCurrentPopup()
+		end
+		
+		imgui.SetItemDefaultFocus()
+		imgui.EndPopup()
+	end
+
+	imgui.End()
+	if appliedBBPTheme then
+		bbp.gui.popStyle()
+	end
 end)
 
 return st

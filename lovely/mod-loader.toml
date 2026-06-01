@@ -3,19 +3,69 @@ version = "1.0.0"
 dump_lua = true
 priority = 2147483647
 
+# lovely module
 [[patches]]
-[patches.copy]
+[patches.pattern]
 target = "main.lua"
-position = "prepend"
-sources = ["mod-loader.lua"]
+pattern = "function love.load(args)"
+position = "before"
+payload = '''lovely = require("lovely")'''
+match_indent = true
 
-# load mods near the end of love.load()
+# bbp module
+[[patches]]
+[patches.module]
+source = "bbp/init.lua"
+before = "main.lua"
+name = "bbp"
+
+[[patches]]
+[patches.module]
+source = "bbp/utils.lua"
+before = "main.lua"
+name = "bbp.utils"
+
+[[patches]]
+[patches.module]
+source = "bbp/loader.lua"
+before = "main.lua"
+name = "bbp.loader"
+
+[[patches]]
+[patches.module]
+source = "bbp/gui.lua"
+before = "main.lua"
+name = "bbp.gui"
+
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = "function love.load(args)"
+position = "after"
+payload = '''bbp = require("bbp")'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = "log:initFile()"
+position = "after"
+payload = '''
+log:defineEnvironment("BBP",2,0)
+log:defineEnvironment("BBP_silent",0,0)
+'''
+match_indent = true
+
+# load mods near the end of love.load
 [[patches]]
 [patches.pattern]
 target = "main.lua"
 pattern = "cs = bs.load(project.initState)"
 position = "before"
-payload = "loadMods()"
+payload = '''
+bbp.loader.loadMods()
+bbp.loader.deleteOldLogs()
+'''
 match_indent = true
 
 # handle error and allow custom path
@@ -25,7 +75,7 @@ target = "lib/basestate.lua"
 pattern = '''
 function basestate.new(filename,name)
   name = name or filename
-  basestate.states[name] = love.filesystem.load("states/" .. filename .. ".lua") -- this is a bad idea  
+  basestate.states[name] = love.filesystem.load("states/" .. filename .. ".lua") -- this is a bad idea
   log("made state ".. name)
 end
 '''
@@ -38,11 +88,12 @@ end
 
 function basestate.fromPath(name, path)
 	local source = path or ("states/" .. name .. ".lua")
+	local errormsg
 	basestate.states[name], errormsg = love.filesystem.load(source)
 	if errormsg then
-		print("[BB+] couldn't load state " .. name .. ". Error: " .. errormsg)
+		log("couldn't load state " .. name .. ". Error: " .. errormsg, "BBP")
 	else
-		print("[BB+] made state " .. name)
+		log("made state " .. name)
 	end
 end
 '''
@@ -58,6 +109,7 @@ payload = '''
 self.mainMenu:addOption('Mods', function()
 	cs = bs.load('Mods')
 	self.menuMusicManager:clearOnBeatHooks()
+	self:leave()
 	cs.menuMusicManager = self.menuMusicManager
 	cs:init()
 end, 17 * 3, nil, sprites.menu.mods)

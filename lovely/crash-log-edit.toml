@@ -11,25 +11,25 @@ pattern = "function love.errorhandler(error_message)"
 position = "after"
 payload = '''
 if love.graphics.getCanvas() then
-  love.graphics.setCanvas()
+	love.graphics.setCanvas()
 end
 
-if not loc then
-	loc = {
-		get = function(a,b)
-			return a
-		end
-	}
-end
-
-if not inspectVar then
-	inspectVar = require "lib.inspect"
-end
-
-if not getModNames then
-	function getModNames()
-		return "Game crashed before mods could load"
+loc = loc or {
+	get = function(a,b)
+		return a
 	end
+}
+
+inspectVar = inspectVar or require "lib.inspect"
+
+if not (bbp and bbp.utils and bbp.utils.getModList) then
+	bbp = {
+		utils = {
+			getModList = function()
+				return "Game crashed before mods could load"
+			end
+		}
+	}
 end
 '''
 match_indent = true
@@ -56,6 +56,7 @@ Would you like to create a crash log?
 
 You can also try removing your mods one by one to find out which mod is causing the crash.
 ]]
+print(fullError)
 '''
 match_indent = false
 
@@ -65,6 +66,16 @@ target = "main.lua"
 pattern = '''local procCount = love.system.getProcessorCount()'''
 position = "before"
 payload = '''
-issuebody = "!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!\n Mod list: \n" .. getModNames() .. "\n!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!\n\n" .. issuebody
+issuebody = string.format([[
+!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!
+Mod list:
+%s
+
+lovely-injector warnings:
+%s
+!!!!!!!!!!!!!!!!! THE GAME IS MODDED. !!!!!!!!!!!!!!!!!
+
+%s
+]], bbp.utils.getModList(), bbp.utils.getLovelyInjectorWarnings(), issuebody)
 '''
 match_indent = false

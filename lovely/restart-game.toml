@@ -1,0 +1,32 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 2147483647
+
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = """
+function love.update(d)
+"""
+position = "after"
+payload = '''
+if BBP_doRestart then
+	local launchArgs = table.concat(arg, " ")
+	local osName = love.system.getOS()
+	local command
+
+	if osName == "Windows" then
+		command = "start beatblock.exe " .. launchArgs
+	elseif osName == "OS X" then
+		command = "open beatblock.app " .. launchArgs .. " &"
+	else -- assume Linux
+		command = "./beatblock " .. launchArgs .. " &"
+	end
+
+	love.window.close()
+	os.execute(command)
+	love.event.quit()
+end
+'''
+match_indent = true
