@@ -1,3 +1,5 @@
+![GitHub Downloads](https://img.shields.io/github/downloads/BeatblockTools/BeatblockPlus/total)
+
 ## Beatblock Plus
 Beatblock Plus offers an in-game mod menu for players and modding utilities for developers.\
 Please see the [wiki](https://beatblocktools.github.io/docs/intro) for installation and mod development guides.
