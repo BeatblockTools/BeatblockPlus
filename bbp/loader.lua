@@ -148,6 +148,7 @@ end
 
 function loader.loadMods() -- loads mod data, assets, mod icons etc.
 	loader.mods = {}
+	loader.activeMods = {}
 
 	-- TODO: remove this later due to deprecation
 	mods = loader.mods
@@ -230,6 +231,8 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 		if mod.enabled == nil then
 			mod.enabled = true
 		end
+
+		loader.activeMods[mod.id] = mod.enabled or nil -- not including disabled mods
 
 		-- load mod config if it exists
 		if love.filesystem.getInfo(mod.path .. "/config.json", 'file') then
