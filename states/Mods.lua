@@ -46,19 +46,19 @@ local function renderModConfig(self, mod)
 	if imgui.Button("Reset Config to Default") then
 		openPopup("reset config confirmation", {name = mod.name, path = mod.path, id = mod.id})
 	end
-	
+
 	if mod.id ~= "beatblock-plus" then
 		imgui.SameLine()
 		if imgui.Button("Delete Mod") then
 			openPopup("delete mod confirmation", {name = mod.name, path = mod.path, id = mod.id})
 		end
 	end
-	
+
 	if imgui.Button("Save Changes") then
 		self.savedConfigDisplayTimer = love.timer.getTime()
 		bbp.utils.saveConfig(mod.id)
 	end
-	
+
 	-- display some text next to the button for one second, so that the user knows that it worked
 	if self.savedConfigDisplayTimer then
 		if love.timer.getTime() - self.savedConfigDisplayTimer > 1 then
@@ -68,7 +68,7 @@ local function renderModConfig(self, mod)
 			imgui.Text("Saved!")
 		end
 	end
-	
+
 	imgui.Separator()
 
 	-- if the mod has a config.lua file, use that to render the config gui
@@ -81,17 +81,26 @@ local function renderModConfig(self, mod)
 end
 
 -- I don't know if there is a way without this
-local function countTable(tbl)
+local function getModCount(tbl)
 	local count = 0
+	local active = 0
+	local enabled = 0
 
-	for _, _ in pairs(tbl) do
+	for _, mod in pairs(tbl) do
 		count = count + 1
+		if mod.enabled then enabled = enabled + 1 end
+		if bbp.loader.activeMods[mod.id] then active = active + 1 end
 	end
 
-	return count
+	return active, enabled, count
 end
 
 st.loadMainMenu = function(self)
+	local active, enabled = getModCount(bbp.mods)
+	if active ~= enabled or self.requiresRestart then
+		openPopup("leave with changes prompt")
+		return
+	end
 	cs = bs.load('Menu')
 	self.menuMusicManager:clearOnBeatHooks()
 	cs.menuMusicManager = self.menuMusicManager
@@ -134,7 +143,7 @@ function st:filedropped(file)
 	if love.filesystem.mount(path, "draganddrop") then
 		local modsPath = "Mods/"
 		local modFolder = findModFolder("draganddrop")
-		
+
 		if not modFolder then
 			log("Error: couldn't find mod.json in zip file: " .. path, "BBP")
 			openPopup("error: no mod.json found")
@@ -153,6 +162,7 @@ function st:filedropped(file)
 		love.filesystem.createDirectory(fullPath)
 		helpers.recursiveFolderCopy(fullPath, "draganddrop".."/"..modFolder)
 		local modData = dpf.loadJson(fullPath.."/".."mod.json")
+		self.requireRestart = true
 		openPopup("new mod added", modData)
 		love.filesystem.unmount(path)
 	else
@@ -210,8 +220,10 @@ st:setFgDraw(function(self)
 	end
 	imgui.Begin("Mods", true, 295) -- notitlebar, noresize, nomove, nocollapse, nobackground, nosavedsettings
 
+	-- we can choose between showing the amount of active or enabled mods here
+	local _, enabled, count = getModCount(bbp.mods)
 	imgui.SetWindowFontScale(2)
-	imgui.Text("Mods: " .. countTable(bbp.mods))
+	imgui.Text("Mods: " .. tostring(enabled) .. "/" .. tostring(count))
 	imgui.SameLine(200)
 	imgui.Text("To install a mod, drag and drop the zip file into this menu.")
 	imgui.SetWindowFontScale(1)
@@ -306,7 +318,7 @@ st:setFgDraw(function(self)
 		if imgui.Button("OK") then
 			imgui.CloseCurrentPopup()
 		end
-		
+
 		imgui.SetItemDefaultFocus()
 	end
 
@@ -352,7 +364,7 @@ st:setFgDraw(function(self)
 
 	if imgui.BeginPopupModal("new mod added", nil, popupFlags) then
 		popupBody("The following mod has been added successfully: " ..
-				self.popupData.name .. " (" .. self.popupData.version .. ") by " .. self.popupData.author 
+				self.popupData.name .. " (" .. self.popupData.version .. ") by " .. self.popupData.author
 				.."\nRestart the game for the mod to take effect.")
 		imgui.EndPopup()
 	end
@@ -374,7 +386,7 @@ st:setFgDraw(function(self)
 			end
 
 			dpf.saveJson(self.popupData.configPath, mod.config)
-			
+
 			local success = love.filesystem.remove(self.popupData.configPath)
 			if success then
 				bbp.mods[self.popupData.id].config = helpers.copy(bbp.mods[self.popupData.id].defaultConfig)
@@ -388,7 +400,7 @@ st:setFgDraw(function(self)
 		if imgui.Button("No") then
 			imgui.CloseCurrentPopup()
 		end
-		
+
 		imgui.SetItemDefaultFocus()
 		imgui.EndPopup()
 	end
@@ -422,6 +434,7 @@ st:setFgDraw(function(self)
 		if imgui.Button("Yes") then
 			bbp.utils.deleteDirectory(self.popupData.path)
 			if not love.filesystem.getInfo(self.popupData.path) then
+				self.requireRestart = true
 				openPopupNextFrame(self, "successfully deleted mod", self.popupData)
 			else
 				openPopupNextFrame(self, "error: failed to delete mod", self.popupData)
@@ -432,7 +445,7 @@ st:setFgDraw(function(self)
 		if imgui.Button("No") then
 			imgui.CloseCurrentPopup()
 		end
-		
+
 		imgui.SetItemDefaultFocus()
 		imgui.EndPopup()
 	end
@@ -465,7 +478,33 @@ st:setFgDraw(function(self)
 		if imgui.Button("No") then
 			imgui.CloseCurrentPopup()
 		end
-		
+
+		imgui.SetItemDefaultFocus()
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("leave with changes prompt", nil, popupFlags) then
+		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
+			imgui.CloseCurrentPopup()
+		end
+
+		if self.requiresRestart then
+			imgui.Text("You have made irreversible changes that require a restart.\nPlease restart the game.\nYou cannot prevent this restart with your options in the mod menu.")
+		else
+			imgui.Text("You have made changes that require a restart.\nPlease restart the game or revert your changes.")
+		end
+
+		imgui.Separator()
+
+		if imgui.Button("Yes, restart now") then
+			BBP_doRestart = true
+		end
+
+		imgui.SameLine()
+		if imgui.Button("No, return to mod menu") then
+			imgui.CloseCurrentPopup()
+		end
+
 		imgui.SetItemDefaultFocus()
 		imgui.EndPopup()
 	end
