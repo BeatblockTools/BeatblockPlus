@@ -9,10 +9,12 @@ function gui.registerFont(id, fontPath, fontSize)
 	config.FontDataOwnedByAtlas = false
 	config.Name = id
 
+	imgui.EndFrame()
 	local content, size = love.filesystem.read(fontPath)
 	_imguiFonts[id] = imio.Fonts:AddFontFromMemoryTTF(ffi.cast('void*', content), size, fontSize, config)
 
 	imgui.love.BuildFontAtlas()
+	imgui.NewFrame()
 	return _imguiFonts[id]
 end
 
