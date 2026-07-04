@@ -21,7 +21,7 @@ if BBP_doRestart then
 	elseif osName == "OS X" then
 		command = "open beatblock.app " .. launchArgs .. " &"
 	else -- assume Linux
-		command = "./beatblock " .. launchArgs .. " &"
+		command = string.format('LD_PRELOAD="%s" exec %s %s &', LD_PRELOAD, arg[-2], launchArgs)
 	end
 
 	love.window.close()

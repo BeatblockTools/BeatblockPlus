@@ -1,5 +1,18 @@
 local bbp = {}
 
+do
+	local osName = love.system.getOS()
+	if (osName ~= "Windows") and (osName ~= "OS X") then -- if Linux
+		local ffi = require("ffi")
+		ffi.cdef([[
+			char *getenv(const char *name);
+			int unsetenv(const char* name);
+		]])
+		LD_PRELOAD = ffi.string(ffi.C.getenv("LD_PRELOAD"))
+		ffi.C.unsetenv("LD_PRELOAD") -- we don't want lovely being injected into anything else
+	end
+end
+
 bbp.utils = require("bbp.utils")
 bbp.gui = require("bbp.gui")
 bbp.loader = require("bbp.loader")
