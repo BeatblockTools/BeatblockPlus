@@ -83,7 +83,7 @@ end
 local function getModAmount()
 	return bbp.utils.countTable(bbp.mods)
 end
-local function getActiveModsAmount()
+local function getActiveModsAmount() -- unused
 	local count = 0
 
 	for _, mod in pairs(bbp.mods) do
@@ -101,12 +101,18 @@ local function getEnabledModsAmount()
 
 	return count
 end
+local function hasReversibleChanges()
+	for _, mod in pairs(bbp.mods) do
+		if mod.enabled ~= bbp.loader.activeMods[mod.id] then return true end
+	end
+	return false
+end
 
 st.loadMainMenu = function(self)
 	if self.requiresRestart then
 		openPopup("leave with irreversible changes")
 		return
-	elseif getActiveModsAmount() ~= getEnabledModsAmount() then
+	elseif hasReversibleChanges() then
 		openPopup("leave with reversible changes")
 		return
 	end
