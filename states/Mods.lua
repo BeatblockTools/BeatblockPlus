@@ -104,7 +104,7 @@ end
 local function hasReversibleChanges()
 	for _, mod in pairs(bbp.mods) do
 		-- convert to boolean because bbp.loader.activeMods is either true or nil
-		if (mod.enabled and true or false) ~= (bbp.loader.activeMods[mod.id] and true or false) then
+		if mod.enabled ~= (bbp.loader.activeMods[mod.id] or false) then
 			return true
 		end
 	end
