@@ -80,24 +80,30 @@ local function renderModConfig(self, mod)
 	end
 end
 
--- I don't know if there is a way without this
-local function getModCount(tbl)
+local function getModAmount()
+	return utils.countTable(bbp.mods)
+end
+local function getActiveModsAmount()
 	local count = 0
-	local active = 0
-	local enabled = 0
 
-	for _, mod in pairs(tbl) do
-		count = count + 1
-		if mod.enabled then enabled = enabled + 1 end
-		if bbp.loader.activeMods[mod.id] then active = active + 1 end
+	for _, mod in pairs(bbp.mods) do
+		if bbp.loader.activeMods[mod.id] then count = count + 1 end
 	end
 
-	return active, enabled, count
+	return count
+end
+local function getEnabledModsAmount()
+	local count = 0
+
+	for _, mod in pairs(bbp.mods) do
+		if mod.enabled then count = count + 1 end
+	end
+
+	return count
 end
 
 st.loadMainMenu = function(self)
-	local active, enabled = getModCount(bbp.mods)
-	if active ~= enabled or self.requiresRestart then
+	if getActiveModsAmount() ~= getEnabledModsAmount() or self.requiresRestart then
 		openPopup("leave with changes prompt")
 		return
 	end
@@ -221,9 +227,8 @@ st:setFgDraw(function(self)
 	imgui.Begin("Mods", true, 295) -- notitlebar, noresize, nomove, nocollapse, nobackground, nosavedsettings
 
 	-- we can choose between showing the amount of active or enabled mods here
-	local _, enabled, count = getModCount(bbp.mods)
 	imgui.SetWindowFontScale(2)
-	imgui.Text("Mods: " .. tostring(enabled) .. "/" .. tostring(count))
+	imgui.Text("Mods: " .. tostring(getEnabledModsAmount()) .. "/" .. tostring(getModAmount()))
 	imgui.SameLine(200)
 	imgui.Text("To install a mod, drag and drop the zip file into this menu.")
 	imgui.SetWindowFontScale(1)
