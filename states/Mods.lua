@@ -81,7 +81,7 @@ local function renderModConfig(self, mod)
 end
 
 local function getModAmount()
-	return utils.countTable(bbp.mods)
+	return bbp.utils.countTable(bbp.mods)
 end
 local function getActiveModsAmount()
 	local count = 0
