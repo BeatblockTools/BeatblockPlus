@@ -18,6 +18,11 @@ local function generateConfig(config)
 	end
 end
 
+-- force the player to restart when leaving the menu
+function st:setRestartRequired()
+	self._restartRequired = true
+end
+
 -- I'm so sorry for using a string for control flow, but it's the best solution I could find.
 local nextPopupTitle = ""
 local nextPopupData = {}
@@ -112,7 +117,7 @@ local function hasReversibleChanges()
 end
 
 st.loadMainMenu = function(self)
-	if self.requiresRestart then
+	if self._restartRequired then
 		openPopup("leave with irreversible changes")
 		return
 	elseif hasReversibleChanges() then
@@ -180,7 +185,6 @@ function st:filedropped(file)
 		love.filesystem.createDirectory(fullPath)
 		helpers.recursiveFolderCopy(fullPath, "draganddrop".."/"..modFolder)
 		local modData = dpf.loadJson(fullPath.."/".."mod.json")
-		self.requireRestart = true
 		openPopup("new mod added", modData)
 		love.filesystem.unmount(path)
 	else
@@ -451,7 +455,7 @@ st:setFgDraw(function(self)
 		if imgui.Button("Yes") then
 			bbp.utils.deleteDirectory(self.popupData.path)
 			if not love.filesystem.getInfo(self.popupData.path) then
-				self.requireRestart = true
+				self:setRestartRequired()
 				openPopupNextFrame(self, "successfully deleted mod", self.popupData)
 			else
 				openPopupNextFrame(self, "error: failed to delete mod", self.popupData)
@@ -505,7 +509,8 @@ st:setFgDraw(function(self)
 			imgui.CloseCurrentPopup()
 		end
 
-		imgui.Text("You have made irreversible changes that require a restart.\nPlease restart the game.\nYou cannot prevent this restart with your options in the mod menu.")
+		imgui.Text("You have made irreversible changes that require a restart.\nPlease restart the game.\n"..
+				"You cannot prevent this restart with your options in the mod menu.")
 
 		imgui.Separator()
 
