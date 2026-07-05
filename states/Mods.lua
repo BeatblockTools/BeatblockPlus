@@ -103,8 +103,11 @@ local function getEnabledModsAmount()
 end
 
 st.loadMainMenu = function(self)
-	if getActiveModsAmount() ~= getEnabledModsAmount() or self.requiresRestart then
-		openPopup("leave with changes prompt")
+	if self.requiresRestart then
+		openPopup("leave with irreversible changes")
+		return
+	elseif getActiveModsAmount() ~= getEnabledModsAmount() then
+		openPopup("leave with reversible changes")
 		return
 	end
 	cs = bs.load('Menu')
@@ -488,16 +491,34 @@ st:setFgDraw(function(self)
 		imgui.EndPopup()
 	end
 
-	if imgui.BeginPopupModal("leave with changes prompt", nil, popupFlags) then
+	if imgui.BeginPopupModal("leave with irreversible changes", nil, popupFlags) then
 		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
 			imgui.CloseCurrentPopup()
 		end
 
-		if self.requiresRestart then
-			imgui.Text("You have made irreversible changes that require a restart.\nPlease restart the game.\nYou cannot prevent this restart with your options in the mod menu.")
-		else
-			imgui.Text("You have made changes that require a restart.\nPlease restart the game or revert your changes.")
+		imgui.Text("You have made irreversible changes that require a restart.\nPlease restart the game.\nYou cannot prevent this restart with your options in the mod menu.")
+
+		imgui.Separator()
+
+		if imgui.Button("Yes, restart now") then
+			BBP_doRestart = true
 		end
+
+		imgui.SameLine()
+		if imgui.Button("No, return to mod menu") then
+			imgui.CloseCurrentPopup()
+		end
+
+		imgui.SetItemDefaultFocus()
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("leave with reversible changes", nil, popupFlags) then
+		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
+			imgui.CloseCurrentPopup()
+		end
+
+		imgui.Text("You have made changes that require a restart.\nPlease restart the game or revert your changes.")
 
 		imgui.Separator()
 
