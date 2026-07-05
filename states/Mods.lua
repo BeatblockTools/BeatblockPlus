@@ -85,28 +85,19 @@ local function renderModConfig(self, mod)
 	end
 end
 
-local function getModAmount()
+local function countMods()
 	return bbp.utils.countTable(bbp.mods)
 end
-local function getActiveModsAmount() -- unused
+
+local function countEnabledMods()
 	local count = 0
-
-	for _, mod in pairs(bbp.mods) do
-		if bbp.loader.activeMods[mod.id] then count = count + 1 end
-	end
-
-	return count
-end
-local function getEnabledModsAmount()
-	local count = 0
-
 	for _, mod in pairs(bbp.mods) do
 		if mod.enabled then count = count + 1 end
 	end
-
 	return count
 end
-local function hasReversibleChanges()
+
+local function modListChanged()
 	for _, mod in pairs(bbp.mods) do
 		-- convert to boolean because bbp.loader.activeMods is either true or nil
 		if mod.enabled ~= (bbp.loader.activeMods[mod.id] or false) then
@@ -120,10 +111,12 @@ st.loadMainMenu = function(self)
 	if self._restartRequired then
 		openPopup("leave with irreversible changes")
 		return
-	elseif hasReversibleChanges() then
+	end
+	if modListChanged() then
 		openPopup("leave with reversible changes")
 		return
 	end
+
 	cs = bs.load('Menu')
 	self.menuMusicManager:clearOnBeatHooks()
 	cs.menuMusicManager = self.menuMusicManager
@@ -242,9 +235,8 @@ st:setFgDraw(function(self)
 	end
 	imgui.Begin("Mods", true, 295) -- notitlebar, noresize, nomove, nocollapse, nobackground, nosavedsettings
 
-	-- we can choose between showing the amount of active or enabled mods here
 	imgui.SetWindowFontScale(2)
-	imgui.Text("Mods: " .. tostring(getEnabledModsAmount()) .. "/" .. tostring(getModAmount()))
+	imgui.Text("Mods: " .. tostring(countEnabledMods()) .. " / " .. tostring(countMods()))
 	imgui.SameLine(200)
 	imgui.Text("To install a mod, drag and drop the zip file into this menu.")
 	imgui.SetWindowFontScale(1)
