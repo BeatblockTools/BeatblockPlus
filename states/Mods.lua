@@ -103,7 +103,10 @@ local function getEnabledModsAmount()
 end
 local function hasReversibleChanges()
 	for _, mod in pairs(bbp.mods) do
-		if mod.enabled ~= bbp.loader.activeMods[mod.id] then return true end
+		-- convert to boolean because bbp.loader.activeMods is either true or nil
+		if (mod.enabled and true or false) ~= (bbp.loader.activeMods[mod.id] and true or false) then
+			return true
+		end
 	end
 	return false
 end
