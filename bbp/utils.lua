@@ -18,6 +18,17 @@ function utils.printTable(table, title, indent)
 	end
 end
 
+-- Counts the real amount of entries for all types of tables
+function utils.countTable(tbl)
+	local count = 0
+
+	for _, _ in pairs(tbl) do
+		count = count + 1
+	end
+
+	return count
+end
+
 -- Moves the source directory to the target directory, and deletes the source directory
 function utils.moveDirectory(source, target)
 	love.filesystem.createDirectory(target)
@@ -138,7 +149,7 @@ function utils.getLovelyInjectorWarnings()
 		if item:match("%.log$") then
 			local path = lovelyLogsPath .. "/" .. item
 			local info = love.filesystem.getInfo(path)
-			
+
 			if info and info.modtime > newestTime then
 				newestTime = info.modtime
 				logPath = path
