@@ -109,10 +109,12 @@ end
 
 st.loadMainMenu = function(self)
 	if self._restartRequired then
+		maininput:update()
 		openPopup("leave with irreversible changes")
 		return
 	end
 	if modListChanged() then
+		maininput:update()
 		openPopup("leave with reversible changes")
 		return
 	end
