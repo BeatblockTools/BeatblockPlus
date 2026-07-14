@@ -3,7 +3,7 @@
 	"name": "Beatblock Plus",
 	"author": "BeatblockTools",
 	"description": "Mod loader for Beatblock",
-	"version": "2.0.0",
+	"version": "2.1.0",
 	"config": {
 		"lightMode": true,
 		"delete": {
