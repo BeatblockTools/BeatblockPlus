@@ -56,7 +56,7 @@ function gui.pushStyle()
 
 	imgui.PushStyleColor_Vec4(imgui.ImGuiCol_Text,                      imgui.ImVec4_Float(0.00, 0.00, 0.00, 1.00))
 	imgui.PushStyleColor_Vec4(imgui.ImGuiCol_TextDisabled,              imgui.ImVec4_Float(0.60, 0.60, 0.60, 1.00))
-	imgui.PushStyleColor_Vec4(imgui.ImGuiCol_WindowBg,                  imgui.ImVec4_Float(0.94, 0.94, 0.94, 1.00))
+	imgui.PushStyleColor_Vec4(imgui.ImGuiCol_WindowBg,                  imgui.ImVec4_Float(1.0, 1.0, 1.0, 1.00))
 	imgui.PushStyleColor_Vec4(imgui.ImGuiCol_ChildBg,                   imgui.ImVec4_Float(0.00, 0.00, 0.00, 0.00))
 	imgui.PushStyleColor_Vec4(imgui.ImGuiCol_PopupBg,                   imgui.ImVec4_Float(1.00, 1.00, 1.00, 0.98))
 	imgui.PushStyleColor_Vec4(imgui.ImGuiCol_Border,                    imgui.ImVec4_Float(0.00, 0.00, 0.00, 0.30))
