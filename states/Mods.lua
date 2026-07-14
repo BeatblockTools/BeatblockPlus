@@ -18,11 +18,6 @@ local function generateConfig(config)
 	end
 end
 
--- force the player to restart when leaving the menu
-function st:setRestartRequired()
-	self._restartRequired = true
-end
-
 -- I'm so sorry for using a string for control flow, but it's the best solution I could find.
 local nextPopupTitle = ""
 local nextPopupData = {}
@@ -110,12 +105,12 @@ end
 st.loadMainMenu = function(self)
 	if self._restartRequired then
 		maininput:update()
-		openPopup("leave with irreversible changes")
+		openPopup("quit with restart required")
 		return
 	end
 	if modListChanged() then
 		maininput:update()
-		openPopup("leave with reversible changes")
+		openPopup("quit with changed mod list")
 		return
 	end
 
@@ -449,7 +444,7 @@ st:setFgDraw(function(self)
 		if imgui.Button("Yes") then
 			bbp.utils.deleteDirectory(self.popupData.path)
 			if not love.filesystem.getInfo(self.popupData.path) then
-				self:setRestartRequired()
+				bbp.utils.setRestartRequired()
 				openPopupNextFrame(self, "successfully deleted mod", self.popupData)
 			else
 				openPopupNextFrame(self, "error: failed to delete mod", self.popupData)
@@ -498,13 +493,12 @@ st:setFgDraw(function(self)
 		imgui.EndPopup()
 	end
 
-	if imgui.BeginPopupModal("leave with irreversible changes", nil, popupFlags) then
+	if imgui.BeginPopupModal("quit with restart required", nil, popupFlags) then
 		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
 			imgui.CloseCurrentPopup()
 		end
 
-		imgui.Text("You have made irreversible changes that require a restart.\nPlease restart the game.\n"..
-				"You cannot prevent this restart with your options in the mod menu.")
+		imgui.Text("You have made some changes that require a restart.\nPlease restart the game.")
 
 		imgui.Separator()
 
@@ -521,12 +515,12 @@ st:setFgDraw(function(self)
 		imgui.EndPopup()
 	end
 
-	if imgui.BeginPopupModal("leave with reversible changes", nil, popupFlags) then
+	if imgui.BeginPopupModal("quit with changed mod list", nil, popupFlags) then
 		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
 			imgui.CloseCurrentPopup()
 		end
 
-		imgui.Text("You have made changes that require a restart.\nPlease restart the game or revert your changes.")
+		imgui.Text("You have enabled/disabled some of your mods.\nPlease restart the game, or revert these changes.")
 
 		imgui.Separator()
 
