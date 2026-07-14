@@ -200,4 +200,12 @@ function utils.saveConfig(id)
 	dpf.saveJson(mods[id].path .. "/config.json", mods[id].config)
 end
 
+-- force the player to restart when leaving the mod menu
+function utils.setRestartRequired()
+	if cs.name ~= "Mods" then
+		error("cannot use setRestartRequired() outside the mod menu")
+	end
+	cs._restartRequired = true
+end
+
 return utils
