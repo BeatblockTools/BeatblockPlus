@@ -1,0 +1,20 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 2147483647
+
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = '''
+function love.load(args)
+'''
+position = "after"
+payload = '''
+for i, file in ipairs(love.filesystem.getDirectoryItems("Mods")) do
+    if string.sub(file, -4, -1) == ".zip" then
+        error("no zips allowed in beatblock/Mods : "..file)
+    end
+end
+'''
+match_indent = true
