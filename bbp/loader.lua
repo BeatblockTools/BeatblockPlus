@@ -288,11 +288,12 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 			bbp.utils.loopFiles(animations, assetsPath .. "/animations", function(tbl, path, fileName)
 				if path:endsWith(".png") then
 					log("injecting animation " .. path .. "...","BBP_silent")
-					local data = bbp.utils.getFileParent(path) .. "data.json"
+					local data = bbp.utils.getFileParent(path) .. bbp.utils.extractFileName(path) .. ".json"
 					if not love.filesystem.getInfo(data, 'file') then
-						log("Error while injecting animation '" .. path .. "'. The '" .. data .. "' file is missing!","BBP")
+						error("Error while injecting animation '" .. path .. "'. " .. bbp.utils.extractFileName(path) .. ".json is missing!")
+					else
+						tbl[fileName] = ez.newjson(path, data)
 					end
-					tbl[fileName] = ez.newjson(path, data)
 				end
 			end)
 
