@@ -286,7 +286,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 
 			-- load animations
 			bbp.utils.loopFiles(animations, assetsPath .. "/animations", function(tbl, path, fileName)
-				if path:endswith(".png") then
+				if path:endsWith(".png") then
 					log("injecting animation " .. path .. "...","BBP_silent")
 					local data = bbp.utils.getFileParent(path) .. "data.json"
 					if not love.filesystem.getInfo(data, 'file') then
