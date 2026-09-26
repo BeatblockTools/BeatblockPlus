@@ -481,7 +481,7 @@ st:setFgDraw(function(self)
 		imgui.Separator()
 
 		if imgui.Button("Yes") then
-			BBP_doRestart = true
+			bbp.utils.restart()
 		end
 
 		imgui.SameLine()
@@ -503,7 +503,7 @@ st:setFgDraw(function(self)
 		imgui.Separator()
 
 		if imgui.Button("Yes, restart now") then
-			BBP_doRestart = true
+			bbp.utils.restart()
 		end
 
 		imgui.SameLine()
@@ -525,7 +525,7 @@ st:setFgDraw(function(self)
 		imgui.Separator()
 
 		if imgui.Button("Yes, restart now") then
-			BBP_doRestart = true
+			bbp.utils.restart()
 		end
 
 		imgui.SameLine()
