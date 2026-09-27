@@ -16,25 +16,21 @@ match_indent = true
 [[patches]]
 [patches.module]
 source = "bbp/init.lua"
-before = "main.lua"
 name = "bbp"
 
 [[patches]]
 [patches.module]
 source = "bbp/utils.lua"
-before = "main.lua"
 name = "bbp.utils"
 
 [[patches]]
 [patches.module]
 source = "bbp/loader.lua"
-before = "main.lua"
 name = "bbp.loader"
 
 [[patches]]
 [patches.module]
 source = "bbp/gui.lua"
-before = "main.lua"
 name = "bbp.gui"
 
 [[patches]]

@@ -208,4 +208,9 @@ function utils.setRestartRequired()
 	cs._restartRequired = true
 end
 
+function utils.restart()
+	lovely.reload_patches()
+	love.event.restart()
+end
+
 return utils
