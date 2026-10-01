@@ -34,6 +34,11 @@ local function openPopupNextFrame(self, title, data)
 end
 
 local function renderModConfig(self, mod)
+	if mod.notSelectable then
+		self.selectedModId = "beatblock-plus"
+		return
+	end
+
 	imgui.TextWrapped(mod.name .. " (" .. mod.version .. ") by " .. mod.author)
 	imgui.TextWrapped(mod.description)
 	imgui.Separator()
@@ -103,17 +108,6 @@ local function modListChanged()
 end
 
 st.loadMainMenu = function(self)
-	if self._restartRequired then
-		maininput:update()
-		openPopup("quit with restart required")
-		return
-	end
-	if modListChanged() then
-		maininput:update()
-		openPopup("quit with changed mod list")
-		return
-	end
-
 	cs = bs.load('Menu')
 	if self.menuMusicManager then self.menuMusicManager:clearOnBeatHooks() end
 	cs.menuMusicManager = self.menuMusicManager
@@ -126,13 +120,44 @@ st.loadMainMenu = function(self)
 end
 
 function st:tryExit()
+	if self._restartRequired then
+		maininput:update()
+		openPopup("quit with restart required")
+		return
+	end
+	if modListChanged() then
+		maininput:update()
+		openPopup("quit with changed mod list")
+		return
+	end
 	local problems = bbp.loader.checkDependsConflicts()
-	if not problems then
-		self:loadMainMenu()
-	else
+	if problems then
 		maininput:update()
 		openPopup("incompatible mods", {problems = problems})
 	end
+
+	self:loadMainMenu()
+end
+
+-- generate cs.sortedIDs from global mods
+local function getSortedIDs()
+	cs.sortedIDs = {}
+	local i = 0
+	for modID, _ in pairs(mods) do
+		i = i + 1
+		cs.sortedIDs[i] = modID
+	end
+	-- the list contains ids, but they're sorted by name
+	table.sort(cs.sortedIDs, function(a, b)
+		return mods[a].name:lower() < mods[b].name:lower()
+	end)
+end
+
+-- load mod as an unselectable item for the mod boxes
+local function loadUnselectableMod(modDir)
+	local mod = bbp.loader.loadModMetadata(modDir)
+	rawset(mod, "notSelectable", true)
+	return mod
 end
 
 -- look for mod.json and return parent folder path and mod.json data
@@ -150,7 +175,7 @@ local function findModFolder(currentDir)
 	end
 end
 
-local function processDroppedMod(path)
+local function handleDroppedMod(path)
 	if love.filesystem.mount(path, "draganddrop") then
 		local mountedModFolder, modData = findModFolder("draganddrop")
 
@@ -171,8 +196,11 @@ local function processDroppedMod(path)
 
 		love.filesystem.createDirectory(fullPath)
 		helpers.recursiveFolderCopy(fullPath, mountedModFolder)
-		openPopup("new mod added", modData)
 		love.filesystem.unmount(path)
+
+		openPopup("new mod added", modData)
+		mods[modData.id] = loadUnselectableMod(fullPath)
+		getSortedIDs()
 	else
 		-- I think this only happens if someone drags a completely empty zip into the game.
 		log("Error: didn't mount draganddrop directory", "BBP")
@@ -181,7 +209,7 @@ local function processDroppedMod(path)
 end
 
 function st:directorydropped(path)
-	processDroppedMod(path)
+	handleDroppedMod(path)
 end
 
 function st:filedropped(file)
@@ -191,7 +219,7 @@ function st:filedropped(file)
 		openPopup("error: invalid file type dropped")
 		return
 	end
-	processDroppedMod(path)
+	handleDroppedMod(path)
 end
 
 st:setInit(function(self)
@@ -199,16 +227,7 @@ st:setInit(function(self)
 
 	self.selectedModId = "beatblock-plus"
 
-	self.sortedIDs = {}
-	local i = 0
-	for modID, _ in pairs(bbp.mods) do
-		i = i + 1
-		self.sortedIDs[i] = modID
-	end
-	-- the list contains ids, but they're sorted by name
-	table.sort(self.sortedIDs, function(a, b)
-		return bbp.mods[a].name:lower() < bbp.mods[b].name:lower()
-	end)
+	getSortedIDs()
 
 	-- ingame cursor doesn't work in the mod menu, so we always use the regular one
 	love.mouse.setVisible(true)
@@ -278,10 +297,17 @@ st:setFgDraw(function(self)
 		-- mod details (name, icon, version, etc.)
 		imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth)
 		imgui.Text(mod.name .. " by " .. mod.author .. " (" .. mod.version .. ")")
+		
+		-- for mods that were just updated or deleted
+		if mod.notSelectable then
+			imgui.SameLine()
+			imgui.Text("[please restart]")
+		end
+		
 		imgui.TextWrapped(mod.description)
 
 		-- show config when clicked
-		if imgui.IsWindowHovered() and imgui.IsMouseClicked(0) then -- left click
+		if imgui.IsWindowHovered() and imgui.IsMouseClicked(0) and not mod.notSelectable then -- left click
 			self.selectedModId = mod.id
 		end
 
@@ -408,6 +434,8 @@ st:setFgDraw(function(self)
 			dpf.saveJson(fullPath .. "/config.json", userconfig)
 
 			bbp.utils.setRestartRequired()
+			mods[modData.id] = loadUnselectableMod("Mods/"..modData.id)
+
 			openPopupNextFrame(self, "successfully updated mod", self.popupData)
 		end
 
@@ -424,7 +452,7 @@ st:setFgDraw(function(self)
 		local modData = self.popupData.modData
 		popupBody("The following mod has been updated: " ..
 				modData.name .. " (" .. modData.version .. ") by " .. modData.author
-				.."\nRestart the game for the changes to take effect.")
+				.."\nPlease restart the game.")
 		imgui.EndPopup()
 	end
 
@@ -501,6 +529,7 @@ st:setFgDraw(function(self)
 			bbp.utils.deleteDirectory(self.popupData.path)
 			if not love.filesystem.getInfo(self.popupData.path) then
 				bbp.utils.setRestartRequired()
+				rawset(mods[self.popupData.id], "notSelectable", true)
 				openPopupNextFrame(self, "successfully deleted mod", self.popupData)
 			else
 				openPopupNextFrame(self, "error: failed to delete mod", self.popupData)
