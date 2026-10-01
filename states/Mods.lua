@@ -115,13 +115,23 @@ st.loadMainMenu = function(self)
 	end
 
 	cs = bs.load('Menu')
-	self.menuMusicManager:clearOnBeatHooks()
+	if self.menuMusicManager then self.menuMusicManager:clearOnBeatHooks() end
 	cs.menuMusicManager = self.menuMusicManager
 	cs:init()
 
 	-- return to ingame cursor if the settings say so
 	if savedata.options.game.customCursorInMenu and (savedata.options.game.cursorMode ~= "default") then
 		love.mouse.setVisible(false)
+	end
+end
+
+function st:tryExit()
+	local problems = bbp.loader.checkDependsConflicts()
+	if not problems then
+		self:loadMainMenu()
+	else
+		maininput:update()
+		openPopup("incompatible mods", {problems = problems})
 	end
 end
 
@@ -209,7 +219,7 @@ st:setUpdate(function(self, dt)
 		-- clear config renderer cache
 		rawset(bbp.mods[self.selectedModId], '_configRenderer', nil)
 	elseif maininput:pressed("back") then
-		self.loadMainMenu(self)
+		self:tryExit()
 	end
 end)
 
@@ -292,7 +302,7 @@ st:setFgDraw(function(self)
 	imgui.Separator()
 
 	if imgui.Button("Go Back") then
-		self.loadMainMenu(self)
+		self:tryExit()
 	end
 
 	imgui.SameLine()
@@ -534,6 +544,29 @@ st:setFgDraw(function(self)
 		end
 
 		imgui.SetItemDefaultFocus()
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("incompatible mods", nil, popupFlags) then
+		imgui.TextUnformatted("You have incompatible mods!\n" .. self.popupData.problems)
+		imgui.Separator()
+
+		if imgui.Button("Return to mod menu") then
+			imgui.CloseCurrentPopup()
+		end
+		imgui.SetItemDefaultFocus()
+
+		imgui.SameLine()
+		if imgui.Button("Continue anyway (don't do this!)") then
+			imgui.CloseCurrentPopup()
+			st:loadMainMenu()
+		end
+
+		imgui.SameLine()
+		if imgui.Button("Close beatblock") then
+			love.event.quit()
+		end
+
 		imgui.EndPopup()
 	end
 

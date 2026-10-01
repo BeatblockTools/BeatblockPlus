@@ -146,6 +146,213 @@ function loader.deleteOldLogs()
 	log("took "..duration.." seconds to delete "..deletedCount.." old log files", "BBP_silent")
 end
 
+local function loadUtilitoolsMetadata(modDir)
+	if not love.filesystem.getInfo(modDir .. "/utilitools.json", "file") then
+		return {}
+	end
+	local utilitoolsJson = dpf.loadJson(modDir .. "/utilitools.json")
+	local modUtilitools = {
+		depends = {},
+		conflicts = {},
+	}
+
+	for to,from in pairs({
+		[modUtilitools.depends] = utilitoolsJson.dependencies,
+		[modUtilitools.conflicts] = utilitoolsJson.incompatibilities,
+	}) do
+		for id,v in pairs(from or {}) do
+			if not v.versions then
+				table.insert(to, { id = id })
+			else
+				for _,v in ipairs(v.versions) do
+					if v[1] == "equalTo" then v[1] = "=" end
+					if v[1] == "lessThan" then v[1] = "<" end
+					if v[1] == "greaterThan" then v[1] = ">" end
+					if v[1] == "lessThanOrEqualTo" then v[1] = "<=" end
+					if v[1] == "moreThanOrEqualTo" then v[1] = ">=" end
+					if v[1] == "fromTil" then error(("BBP: '%s/utilitools.json': version specifier 'fromTil' not supported in BBP.")) end
+					if v[1] == "between" then error(("BBP: '%s/utilitools.json': version specifier 'between' not supported in BBP.")) end
+					table.insert(to, { id = id, version = v[1] .. " " .. v[2]})
+				end
+			end
+		end
+	end
+	return modUtilitools
+end
+
+local function loadModMetadata(modDir)
+	if not love.filesystem.getInfo(modDir .. "/mod.json", "file") then return end
+	local modJson = dpf.loadJson(modDir .. "/mod.json")
+
+	if not (modJson.depends or modJson.conflicts) then -- try utilitools.json
+		local modUtilitools = loadUtilitoolsMetadata(modDir)
+		modJson.depends = modUtilitools.depends
+		modJson.conflicts = modUtilitools.conflicts
+	end
+
+	local mod = {
+		path = modDir,
+		id = assert(modJson.id, ("'%s/mod.json': missing mandatory field 'id'"):format(modDir)),
+		name = modJson.name or modJson.id,
+		author = modJson.author or "Unknown",
+		description = modJson.description or "",
+		version = modJson.version or "1.0.0",
+		icon = nil,
+		defaultConfig = modJson.config or {},
+		config = helpers.copytable(modJson.config or {}),
+		depends = modJson.depends or {},
+		conflicts = modJson.conflicts or {},
+	}
+	setmetatable(mod, {
+		__index = function(t, k)
+			if k == "enabled" then
+				return t._enabled
+			elseif k == "configRenderer" then
+				return getModConfigRenderer(t)
+			end
+			return rawget(t, k)
+		end,
+		__newindex = function(t, k, v)
+			if k == "enabled" then
+				return setModEnabled(t, v)
+			end
+			error(("Attmepted to create new field '%s' on mod"):format(k))
+		end
+	})
+	mod.enabled = love.filesystem.getInfo(mod.path .. "/.lovelyignore", 'file') == nil
+	if modJson.enabled ~= nil then log("'" .. modDir .. "/mod.json': 'enabled' is deprecated in favor of the .lovelyignore file","BBP") end
+
+	-- load mod config if it exists
+	if love.filesystem.getInfo(mod.path .. "/config.json", 'file') then
+		local modConfig = dpf.loadJson(mod.path .. "/config.json")
+		if modConfig then
+			-- a shallow copy is enough in this case
+			for k, v in pairs(modConfig) do
+				mod.config[k] = v
+			end
+		end
+	end
+
+	-- load mod icon if it exists
+	if love.filesystem.getInfo(mod.path .. "/icon.png", 'file') then
+		local modIcon = love.graphics.newImage(mod.path .. "/icon.png")
+		local width, height = modIcon:getDimensions()
+		assert(width == 73 and height == 33, ("Mod icon '%s' has invalid size. Mod icons must be 73x33."):format(mod.path.."/icon.png"))
+		rawset(mod, "icon", modIcon)
+	end
+
+	return mod
+end
+
+local function checkVersion(ver, versions) -- check if `ver` is covered by `versions`
+	if versions == nil then
+		return true
+	end
+
+	local function splitVersion(v)
+		local r = {}
+		for n in string.gmatch(v, "([^.]+)%.?") do
+			table.insert(r, tonumber(n:match("%d+")))
+		end
+		return r
+	end
+
+	local function cmp(v1, v2, func, last) -- func should return true, false or nil
+		v1 = type(v1) == "table" and v1 or splitVersion(v1)
+		v2 = type(v2) == "table" and v2 or splitVersion(v2)
+		for i=1,math.max(#v1,#v2) do
+			local c = func(v1[i] or 0, v2[i] or 0)
+			if c ~= nil then return c end
+		end
+		return last
+	end
+
+	local function eq(v1, v2) return cmp(v1, v2, function(a, b) if a == b then return nil else return false end end, true) end
+	local function lt(v1, v2) return cmp(v1, v2, function(a, b) if a == b then return nil else return a < b end end, false) end
+	local function gt(v1, v2) return cmp(v1, v2, function(a, b) if a == b then return nil else return a > b end end, false) end
+
+	assert(type(versions) == "string", "version specifier must be a string!")
+
+	if versions:startsWith("=") then
+		local ver2 = versions:sub(2)
+		return eq(ver, ver2)
+	elseif versions:startsWith("<=") then
+		local ver2 = versions:sub(3)
+		return not gt(ver, ver2)
+	elseif versions:startsWith(">=") then
+		local ver2 = versions:sub(3)
+		return not lt(ver, ver2)
+	elseif versions:startsWith("<") then
+		local ver2 = versions:sub(2)
+		return lt(ver, ver2)
+	elseif versions:startsWith(">") then
+		local ver2 = versions:sub(2)
+		return gt(ver, ver2)
+	end
+
+	error(("Invalid version specifier '%s'"):format(versions))
+end
+
+local function checkModDependsConflicts(mod)
+	local problems = {}
+	for _,dep in ipairs(mod.depends) do
+		if #dep == 0 then dep = {dep} end -- each entry is either {id,version}, or a list of options
+
+		local optionProblems = {}
+		for _,dep in ipairs(dep) do
+			assert(dep.id, ("Malformed dependencies in '%s': missing 'id'"):format(mod.id))
+			local other = loader.mods[dep.id]
+			if not other then
+				table.insert(optionProblems, ("'%s': not installed"):format(dep.id))
+			elseif not other.enabled then
+				table.insert(optionProblems, ("'%s': not enabled"):format(dep.id))
+			elseif not checkVersion(other.version, dep.version) then
+				table.insert(optionProblems, ("'%s': wrong version (%s), expected %s"):format(dep.id, other.version, dep.version))
+			else
+				optionProblems = nil
+				break
+			end
+		end
+		if optionProblems then
+			if #dep == 1 then
+				table.insert(problems, ("'%s': missing dependency: %s"):format(mod.id, optionProblems[1]))
+			else
+				local sep = "\n    "
+				table.insert(problems, ("'%s': missing dependency: one of: %s"):format(mod.id, sep .. table.concat(optionProblems, sep)))
+			end
+		end
+	end
+
+	for _,conflict in pairs(mod.conflicts) do
+		assert(conflict.id, ("Malformed conflicts in '%s': missing 'id'"):format(mod.id))
+		local other = loader.mods[conflict.id]
+		if other and other.enabled and checkVersion(other.version, conflict.version) then
+			table.insert(problems, ("'%s': incompatible with '%s'"):format(mod.id, conflict.id))
+		end
+	end
+
+	return problems
+end
+
+-- returns a (multiline) string with problems, or nil
+function loader.checkDependsConflicts()
+	local problems = {}
+	for id,mod in pairs(loader.mods) do
+		if not mod.enabled then goto continue end
+
+		local p = checkModDependsConflicts(mod)
+		if #p > 0 then
+			table.insert(problems, table.concat(p, "\n"))
+		end
+
+		::continue::
+	end
+	if #problems == 0 then
+		return nil
+	end
+	return table.concat(problems, "\n\n")
+end
+
 function loader.loadMods() -- loads mod data, assets, mod icons etc.
 	loader.mods = {}
 	loader.activeMods = {}
@@ -162,100 +369,10 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 	end
 
 	for _, modDir in ipairs(love.filesystem.getDirectoryItems(modsPath)) do
-		if not love.filesystem.getInfo(modsPath .. "/" .. modDir .. "/mod.json", 'file') then
-			goto continue
-		end
-
-		local mod = {
-			path = modsPath .. "/" .. modDir,
-			id = modDir,
-			name = modDir,
-			author = "Unknown",
-			description = "",
-			version = "1.0.0",
-			icon = nil,
-			defaultConfig = {},
-			config = {}
-		}
-		setmetatable(mod, {
-			__index = function(t, k)
-				if k == "enabled" then
-					return t._enabled
-				elseif k == "configRenderer" then
-					return getModConfigRenderer(t)
-				end
-				return rawget(t, k)
-			end,
-			__newindex = function(t, k, v)
-				if k == "enabled" then
-					setModEnabled(t, v)
-				end
-			end
-		})
-
-		if not love.filesystem.getInfo(mod.path, 'directory') then
-			goto continue
-		end
-
-		local lovelyignore = love.filesystem.getInfo(mod.path .. "/.lovelyignore", 'file')
-		local nolovelyignore = love.filesystem.getInfo(mod.path .. "/.nolovelyignore", 'file')
-		if lovelyignore ~= nil then
-			mod.enabled = false
-		elseif nolovelyignore ~= nil then
-			mod.enabled = true
-		end
-
-		-- load mod data
-		local modData = dpf.loadJson(mod.path .. "/mod.json")
-		mod.id = modData.id or mod.id
-		mod.name = modData.name or mod.name
-		mod.author = modData.author or mod.author
-		mod.description = modData.description or mod.description
-		mod.version = modData.version or mod.version
-		mod.defaultConfig = modData.config or mod.defaultConfig
-		mod.config = helpers.copytable(mod.defaultConfig)
-		-- TODO: deprecated
-		if modData.enabled ~= nil then
-			log("'" .. mod.path .. "/mod.json" .. "': 'enabled' is deprecated in favor of the .lovelyignore file","BBP")
-			if mod.enabled == nil then
-				mod.enabled = modData.enabled
-				if modData.enabled == false then
-					local disabledPath = "Mods/disabled/" .. mod.id .. "/lovely/"
-					if love.filesystem.getInfo(disabledPath, 'directory') then
-						bbp.utils.moveDirectory(disabledPath, mod.path .. "/lovely/")
-					end
-				end
-			end
-		end
-
-		if mod.enabled == nil then
-			mod.enabled = true
-		end
+		local mod = loadModMetadata(modsPath.."/"..modDir)
+		if not mod then goto continue end
 
 		loader.activeMods[mod.id] = mod.enabled or nil -- not including disabled mods
-
-		-- load mod config if it exists
-		if love.filesystem.getInfo(mod.path .. "/config.json", 'file') then
-			local modConfig = dpf.loadJson(mod.path .. "/config.json")
-			if modConfig then
-				-- a shallow copy is enough in this case
-				for k, v in pairs(modConfig) do
-					mod.config[k] = v
-				end
-			end
-		end
-
-		-- load mod icon if it exists
-		if love.filesystem.getInfo(mod.path .. "/icon.png", 'file') then
-			local modIcon = love.graphics.newImage(mod.path .. "/icon.png")
-			local width, height = modIcon:getDimensions()
-			if width ~= 73 or height ~= 33 then
-				log("Mod icon of " .. mod.id .. " has invalid size. Mod icons must be 73x33.","BBP")
-			else
-				rawset(mod, "icon", modIcon)
-			end
-		end
-
 		loader.mods[mod.id] = mod
 		log("Registered mod '" .. mod.name .. "' by " .. mod.author .. ".","BBP_silent")
 
@@ -344,6 +461,27 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 	end
 
 	log("Finished loading all mods! :D","BBP")
+
+	local problems = loader.checkDependsConflicts()
+	if problems then
+		print("Incompatible mods!\n"..problems)
+
+		local buttons = {
+			"Open mod menu",
+			"Continue anyway (don't do this!)",
+			"Exit",
+			escapebutton = 3,
+			enterbutton = 1,
+		}
+		local pressed = love.window.showMessageBox("Incompatible mods!", problems, buttons, "error", false)
+		if pressed == 1 then
+			project.initState = 'Mods'
+		elseif pressed == 2 then
+			-- do nothing
+		else
+			love.event.quit()
+		end
+	end
 
 	if log.display.BBP_silent > 0 then
 		bbp.utils.printTable(animations, "Animations:")
