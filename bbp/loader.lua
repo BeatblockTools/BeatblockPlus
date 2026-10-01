@@ -72,7 +72,7 @@ local function getModConfigRenderer(mod)
 	return mod._configRenderer
 end
 
-local function setModEnabled(mod, enabled)
+function loader.setModEnabled(mod, enabled)
 	if enabled == nil then
 		enabled = true
 	end
@@ -174,7 +174,7 @@ function loader.loadModMetadata(modDir)
 		end,
 		__newindex = function(t, k, v)
 			if k == "enabled" then
-				return setModEnabled(t, v)
+				return loader.setModEnabled(t, v)
 			end
 			error(("Attmepted to create new field '%s' on mod"):format(k))
 		end

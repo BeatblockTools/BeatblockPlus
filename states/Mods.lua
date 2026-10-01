@@ -428,10 +428,11 @@ st:setFgDraw(function(self)
 			love.filesystem.unmount(self.popupData.path)
 
 			local userconfig = helpers.copytable(modData.config)
-			for k,v in ipairs(mods[modData.id].config) do
+			for k,v in pairs(mods[modData.id].config) do
 				userconfig[k] = v
 			end
 			dpf.saveJson(fullPath .. "/config.json", userconfig)
+			bbp.loader.setModEnabled(mods[modData.id], mods[modData.id]._enabled)
 
 			bbp.utils.setRestartRequired()
 			mods[modData.id] = loadUnselectableMod("Mods/"..modData.id)
