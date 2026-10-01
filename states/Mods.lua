@@ -152,7 +152,6 @@ end
 
 local function processDroppedMod(path)
 	if love.filesystem.mount(path, "draganddrop") then
-		local modsPath = "Mods/"
 		local mountedModFolder, modData = findModFolder("draganddrop")
 
 		if not mountedModFolder then
@@ -162,11 +161,10 @@ local function processDroppedMod(path)
 			return
 		end
 
-		local fullPath = modsPath..modData.id
+		local fullPath = "Mods/"..modData.id
 
-		--TODO implement updating
 		if love.filesystem.getInfo(fullPath) then
-			openPopup("error: mod already exists", {modFolder = modData.id})
+			openPopup("update confirmation", {path=path,modData=modData,mountedModFolder=mountedModFolder})
 			love.filesystem.unmount(path)
 			return
 		end
@@ -376,6 +374,57 @@ st:setFgDraw(function(self)
 		popupBody("A mod with the folder name '"..self.popupData.modFolder.."' is already present.\n"..
 				"If you're trying to update, please remove the previous version from your Mods directory.\n"..
 				"No mod was added.")
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("update confirmation", nil, popupFlags) then
+		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
+			imgui.CloseCurrentPopup()
+		end
+
+		local modData = self.popupData.modData
+
+		imgui.Text("Are you sure, you want to update '" .. modData.name .. "' from " .. mods[modData.id].version ..
+				" to " .. modData.version .. " ?\nMod path: Mods/" .. modData.id ..
+				"\nYour configs will be carried over. !! THIS CAN'T BE UNDONE !!")
+
+		imgui.Separator()
+
+		if imgui.Button("Yes") then
+			local success = love.filesystem.mount(self.popupData.path, "draganddrop")
+			if not success then error("failed to mount previously valid directory. maybe it was moved?") end
+
+			local fullPath = "Mods/"..modData.id
+			bbp.utils.deleteDirectory(fullPath)
+			love.filesystem.createDirectory(fullPath)
+			helpers.recursiveFolderCopy(fullPath, self.popupData.mountedModFolder)
+
+			love.filesystem.unmount(self.popupData.path)
+
+			local userconfig = helpers.copytable(modData.config)
+			for k,v in ipairs(mods[modData.id].config) do
+				userconfig[k] = v
+			end
+			dpf.saveJson(fullPath .. "/config.json", userconfig)
+
+			bbp.utils.setRestartRequired()
+			openPopupNextFrame(self, "successfully updated mod", self.popupData)
+		end
+
+		imgui.SameLine()
+		if imgui.Button("No") then
+			imgui.CloseCurrentPopup()
+		end
+
+		imgui.SetItemDefaultFocus()
+		imgui.EndPopup()
+	end
+
+	if imgui.BeginPopupModal("successfully updated mod", nil, popupFlags) then
+		local modData = self.popupData.modData
+		popupBody("The following mod has been updated: " ..
+				modData.name .. " (" .. modData.version .. ") by " .. modData.author
+				.."\nRestart the game for the changes to take effect.")
 		imgui.EndPopup()
 	end
 
