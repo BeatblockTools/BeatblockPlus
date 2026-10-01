@@ -135,25 +135,55 @@ function st:tryExit()
 	end
 end
 
--- look for directory/folder-name/mod.json and return folder-name
-local function findModFolder(directory)
-	local modFolder
-	local directoryItems = love.filesystem.getDirectoryItems(directory)
-	for _, item in pairs(directoryItems) do
-		local fileInfo = love.filesystem.getInfo(directory .. "/" .. item)
-		if fileInfo and fileInfo.type == "directory" then
-			if love.filesystem.getInfo(directory .. "/" .. item .. "/" .. "mod.json") then
-				modFolder = item
-				break
+-- look for mod.json and return parent folder path and mod.json data
+local function findModFolder(currentDir)
+	for _, item in ipairs(love.filesystem.getDirectoryItems(currentDir)) do
+		local itemDir = currentDir .. "/" .. item
+		if love.filesystem.getInfo(itemDir, "directory") then
+			local modFolder, modData = findModFolder(itemDir)
+			if modFolder then
+				return modFolder, modData
 			end
+		elseif item == "mod.json" then
+			return currentDir, dpf.loadJson(itemDir)
 		end
 	end
-	return modFolder
+end
+
+local function processDroppedMod(path)
+	if love.filesystem.mount(path, "draganddrop") then
+		local modsPath = "Mods/"
+		local mountedModFolder, modData = findModFolder("draganddrop")
+
+		if not mountedModFolder then
+			log("Error: couldn't find mod.json in " .. path, "BBP")
+			openPopup("error: no mod.json found")
+			love.filesystem.unmount(path)
+			return
+		end
+
+		local fullPath = modsPath..modData.id
+
+		--TODO implement updating
+		if love.filesystem.getInfo(fullPath) then
+			openPopup("error: mod already exists", {modFolder = modData.id})
+			love.filesystem.unmount(path)
+			return
+		end
+
+		love.filesystem.createDirectory(fullPath)
+		helpers.recursiveFolderCopy(fullPath, mountedModFolder)
+		openPopup("new mod added", modData)
+		love.filesystem.unmount(path)
+	else
+		-- I think this only happens if someone drags a completely empty zip into the game.
+		log("Error: didn't mount draganddrop directory", "BBP")
+		return
+	end
 end
 
 function st:directorydropped(path)
-	--TODO try zipping it into a valid mod
-	openPopup("error: folder dropped")
+	processDroppedMod(path)
 end
 
 function st:filedropped(file)
@@ -163,38 +193,7 @@ function st:filedropped(file)
 		openPopup("error: invalid file type dropped")
 		return
 	end
-
-	if love.filesystem.mount(path, "draganddrop") then
-		local modsPath = "Mods/"
-		local modFolder = findModFolder("draganddrop")
-
-		--TODO make a recursive check instead to support more folder structures
-		if not modFolder then
-			log("Error: couldn't find mod.json in zip file: " .. path, "BBP")
-			openPopup("error: no mod.json found")
-			love.filesystem.unmount(path)
-			return
-		end
-
-		local fullPath = modsPath..modFolder
-
-		--TODO implement updating
-		if love.filesystem.getInfo(fullPath) then
-			openPopup("error: mod already exists", {modFolder = modFolder})
-			love.filesystem.unmount(path)
-			return
-		end
-
-		love.filesystem.createDirectory(fullPath)
-		helpers.recursiveFolderCopy(fullPath, "draganddrop".."/"..modFolder)
-		local modData = dpf.loadJson(fullPath.."/".."mod.json")
-		openPopup("new mod added", modData)
-		love.filesystem.unmount(path)
-	else
-		-- I think this only happens if someone drags a completely empty zip into the game.
-		log("Error: didn't mount draganddrop directory", "BBP")
-		return
-	end
+	processDroppedMod(path)
 end
 
 st:setInit(function(self)
@@ -360,11 +359,6 @@ st:setFgDraw(function(self)
 
 	-- copy local data into state data
 	self.popupData = nextPopupData or self.popupData
-
-	if imgui.BeginPopupModal("error: folder dropped", nil, popupFlags) then
-		popupBody("Drag and drop is not supported for folders. Please use a zip file.\nNo mod was added.")
-		imgui.EndPopup()
-	end
 
 	if imgui.BeginPopupModal("error: invalid file type dropped", nil, popupFlags) then
 		popupBody("Could not identify the dropped file type. Make sure you're using a .zip file.\nNo mod was added.")
