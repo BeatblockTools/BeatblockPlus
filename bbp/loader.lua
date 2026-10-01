@@ -214,7 +214,7 @@ local function checkVersion(ver, versions) -- check if `ver` is covered by `vers
 		for n in string.gmatch(v, "([^.]+)%.?") do
 			table.insert(r, tonumber(n:match("%d+")))
 		end
-		if #r == 0 then log("could not interpret version numbers: "..v ,"BBP") end
+		if #r == 0 then log("could not split version: "..v ,"BBP") end
 		return r
 	end
 

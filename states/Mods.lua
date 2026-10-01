@@ -152,6 +152,7 @@ local function findModFolder(directory)
 end
 
 function st:directorydropped(path)
+	--TODO try zipping it into a valid mod
 	openPopup("error: folder dropped")
 end
 
@@ -167,6 +168,7 @@ function st:filedropped(file)
 		local modsPath = "Mods/"
 		local modFolder = findModFolder("draganddrop")
 
+		--TODO make a recursive check instead to support more folder structures
 		if not modFolder then
 			log("Error: couldn't find mod.json in zip file: " .. path, "BBP")
 			openPopup("error: no mod.json found")
@@ -176,6 +178,7 @@ function st:filedropped(file)
 
 		local fullPath = modsPath..modFolder
 
+		--TODO implement updating
 		if love.filesystem.getInfo(fullPath) then
 			openPopup("error: mod already exists", {modFolder = modFolder})
 			love.filesystem.unmount(path)
