@@ -146,49 +146,9 @@ function loader.deleteOldLogs()
 	log("took "..duration.." seconds to delete "..deletedCount.." old log files", "BBP_silent")
 end
 
-local function loadUtilitoolsMetadata(modDir)
-	if not love.filesystem.getInfo(modDir .. "/utilitools.json", "file") then
-		return {}
-	end
-	local utilitoolsJson = dpf.loadJson(modDir .. "/utilitools.json")
-	local modUtilitools = {
-		depends = {},
-		conflicts = {},
-	}
-
-	for to,from in pairs({
-		[modUtilitools.depends] = utilitoolsJson.dependencies,
-		[modUtilitools.conflicts] = utilitoolsJson.incompatibilities,
-	}) do
-		for id,v in pairs(from or {}) do
-			if not v.versions then
-				table.insert(to, { id = id })
-			else
-				for _,v in ipairs(v.versions) do
-					if v[1] == "equalTo" then v[1] = "=" end
-					if v[1] == "lessThan" then v[1] = "<" end
-					if v[1] == "greaterThan" then v[1] = ">" end
-					if v[1] == "lessThanOrEqualTo" then v[1] = "<=" end
-					if v[1] == "moreThanOrEqualTo" then v[1] = ">=" end
-					if v[1] == "fromTil" then error(("BBP: '%s/utilitools.json': version specifier 'fromTil' not supported in BBP.")) end
-					if v[1] == "between" then error(("BBP: '%s/utilitools.json': version specifier 'between' not supported in BBP.")) end
-					table.insert(to, { id = id, version = v[1] .. " " .. v[2]})
-				end
-			end
-		end
-	end
-	return modUtilitools
-end
-
 local function loadModMetadata(modDir)
 	if not love.filesystem.getInfo(modDir .. "/mod.json", "file") then return end
 	local modJson = dpf.loadJson(modDir .. "/mod.json")
-
-	if not (modJson.depends or modJson.conflicts) then -- try utilitools.json
-		local modUtilitools = loadUtilitoolsMetadata(modDir)
-		modJson.depends = modUtilitools.depends
-		modJson.conflicts = modUtilitools.conflicts
-	end
 
 	local mod = {
 		path = modDir,
@@ -254,10 +214,11 @@ local function checkVersion(ver, versions) -- check if `ver` is covered by `vers
 		for n in string.gmatch(v, "([^.]+)%.?") do
 			table.insert(r, tonumber(n:match("%d+")))
 		end
+		if #r == 0 then log("could not interpret version numbers: "..v ,"BBP") end
 		return r
 	end
 
-	local function cmp(v1, v2, func, last) -- func should return true, false or nil
+	local function compare(v1, v2, func, last) -- func should return true, false or nil
 		v1 = type(v1) == "table" and v1 or splitVersion(v1)
 		v2 = type(v2) == "table" and v2 or splitVersion(v2)
 		for i=1,math.max(#v1,#v2) do
@@ -267,9 +228,9 @@ local function checkVersion(ver, versions) -- check if `ver` is covered by `vers
 		return last
 	end
 
-	local function eq(v1, v2) return cmp(v1, v2, function(a, b) if a == b then return nil else return false end end, true) end
-	local function lt(v1, v2) return cmp(v1, v2, function(a, b) if a == b then return nil else return a < b end end, false) end
-	local function gt(v1, v2) return cmp(v1, v2, function(a, b) if a == b then return nil else return a > b end end, false) end
+	local function eq(v1, v2) return compare(v1, v2, function(a, b) if a == b then return nil else return false end end, true) end
+	local function lt(v1, v2) return compare(v1, v2, function(a, b) if a == b then return nil else return a < b end end, false) end
+	local function gt(v1, v2) return compare(v1, v2, function(a, b) if a == b then return nil else return a > b end end, false) end
 
 	assert(type(versions) == "string", "version specifier must be a string!")
 
