@@ -185,13 +185,16 @@ local function handleDroppedMod(path)
 			love.filesystem.unmount(path)
 			return
 		end
-
-		local fullPath = "Mods/"..modData.id
-
-		if love.filesystem.getInfo(fullPath) then
+		
+		if mods[modData.id] then
 			openPopup("update confirmation", {path=path,modData=modData,mountedModFolder=mountedModFolder})
 			love.filesystem.unmount(path)
 			return
+		end
+		
+		local fullPath = "Mods/"..modData.id
+		if love.filesystem.getInfo(fullPath) then
+			error("directory '" .. fullPath .. "'already exists and doesn't fit id '" .. modData.id .. "'")
 		end
 
 		love.filesystem.createDirectory(fullPath)
@@ -411,7 +414,7 @@ st:setFgDraw(function(self)
 		local modData = self.popupData.modData
 
 		imgui.Text("Are you sure, you want to update '" .. modData.name .. "' from " .. mods[modData.id].version ..
-				" to " .. modData.version .. " ?\nMod path: Mods/" .. modData.id ..
+				" to " .. modData.version .. " ?\nMod path: " .. mods[modData.id].path ..
 				"\nYour configs will be carried over. !! THIS CAN'T BE UNDONE !!")
 
 		imgui.Separator()
@@ -420,7 +423,7 @@ st:setFgDraw(function(self)
 			local success = love.filesystem.mount(self.popupData.path, "draganddrop")
 			if not success then error("failed to mount previously valid directory. maybe it was moved?") end
 
-			local fullPath = "Mods/"..modData.id
+			local fullPath = mods[modData.id].path
 			bbp.utils.deleteDirectory(fullPath)
 			love.filesystem.createDirectory(fullPath)
 			helpers.recursiveFolderCopy(fullPath, self.popupData.mountedModFolder)
@@ -435,7 +438,7 @@ st:setFgDraw(function(self)
 			bbp.loader.setModEnabled(mods[modData.id], mods[modData.id]._enabled)
 
 			bbp.utils.setRestartRequired()
-			mods[modData.id] = loadUnselectableMod("Mods/"..modData.id)
+			mods[modData.id] = loadUnselectableMod(fullPath)
 
 			openPopupNextFrame(self, "successfully updated mod", self.popupData)
 		end
