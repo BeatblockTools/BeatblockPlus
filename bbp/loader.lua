@@ -256,39 +256,27 @@ end
 
 local function checkModDependsConflicts(mod)
 	local problems = {}
-	for _,dep in ipairs(mod.depends) do
-		if #dep == 0 then dep = {dep} end -- each entry is either {id,version}, or a list of options
 
-		local optionProblems = {}
-		for _,dep in ipairs(dep) do
-			assert(dep.id, ("Malformed dependencies in '%s': missing 'id'"):format(mod.id))
-			local other = loader.mods[dep.id]
-			if not other then
-				table.insert(optionProblems, ("'%s': not installed"):format(dep.id))
-			elseif not other.enabled then
-				table.insert(optionProblems, ("'%s': not enabled"):format(dep.id))
-			elseif not checkVersion(other.version, dep.version) then
-				table.insert(optionProblems, ("'%s': wrong version (%s), expected %s"):format(dep.id, other.version, dep.version))
-			else
-				optionProblems = nil
-				break
-			end
-		end
-		if optionProblems then
-			if #dep == 1 then
-				table.insert(problems, ("'%s': missing dependency: %s"):format(mod.id, optionProblems[1]))
-			else
-				local sep = "\n    "
-				table.insert(problems, ("'%s': missing dependency: one of: %s"):format(mod.id, sep .. table.concat(optionProblems, sep)))
-			end
+	for id,version in pairs(mod.depends) do
+		local mentionedMod = loader.mods[id]
+		local dep_problem = "'" .. mod.id .. "' is missing dependency "
+		if not mentionedMod then
+			table.insert(problems, (dep_problem.."'%s': not installed"):format(id))
+		elseif not mentionedMod.enabled then
+			table.insert(problems, (dep_problem.."'%s': not enabled"):format(id))
+		elseif version ~= "" and not checkVersion(mentionedMod.version, version) then
+			table.insert(problems, (dep_problem.."'%s': wrong version (%s), expected '%s'"):format(id, mentionedMod.version, version))
 		end
 	end
 
-	for _,conflict in pairs(mod.conflicts) do
-		assert(conflict.id, ("Malformed conflicts in '%s': missing 'id'"):format(mod.id))
-		local other = loader.mods[conflict.id]
-		if other and other.enabled and checkVersion(other.version, conflict.version) then
-			table.insert(problems, ("'%s': incompatible with '%s'"):format(mod.id, conflict.id))
+	for id,version in pairs(mod.conflicts) do
+		local mentionedMod = loader.mods[id]
+		if mentionedMod and mentionedMod.enabled then
+			if version == "" then
+				table.insert(problems, ("'%s' is incompatible with '%s'"):format(mod.id, id))
+			elseif checkVersion(mentionedMod.version, version) then
+				table.insert(problems, ("'%s' is incompatible with '%s' version '%s'"):format(mod.id, id, version))
+			end
 		end
 	end
 
@@ -428,19 +416,19 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 		print("Incompatible mods!\n"..problems)
 
 		local buttons = {
-			"Open mod menu",
-			"Continue anyway (don't do this!)",
 			"Exit",
-			escapebutton = 3,
-			enterbutton = 1,
+			"Continue anyway",
+			"Open mod menu",
+			escapebutton = 1,
+			enterbutton = 3,
 		}
-		local pressed = love.window.showMessageBox("Incompatible mods!", problems, buttons, "error", false)
+		local pressed = love.window.showMessageBox("Incompatible mods!", problems.."\n\nWe recommend resolving these issues in the mod menu before continuing.", buttons, "error", false)
 		if pressed == 1 then
-			project.initState = 'Mods'
+			love.event.quit()
 		elseif pressed == 2 then
 			-- do nothing
 		else
-			love.event.quit()
+			project.initState = 'Mods'
 		end
 	end
 
