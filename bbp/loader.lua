@@ -254,28 +254,32 @@ local function checkVersion(ver, versions) -- check if `ver` is covered by `vers
 	error(("Invalid version specifier '%s'"):format(versions))
 end
 
-local function checkModDependsConflicts(mod)
+function loader.checkModDependsConflicts(mod)
 	local problems = {}
 
-	for id,version in pairs(mod.depends) do
-		local mentionedMod = loader.mods[id]
-		local dep_problem = "'" .. mod.id .. "' is missing dependency "
-		if not mentionedMod then
-			table.insert(problems, (dep_problem.."'%s': not installed"):format(id))
-		elseif not mentionedMod.enabled then
-			table.insert(problems, (dep_problem.."'%s': not enabled"):format(id))
-		elseif version ~= "" and not checkVersion(mentionedMod.version, version) then
-			table.insert(problems, (dep_problem.."'%s': wrong version (%s), expected '%s'"):format(id, mentionedMod.version, version))
+	if mod.depends then
+		for id,version in pairs(mod.depends) do
+			local mentionedMod = loader.mods[id]
+			local dep_problem = "'" .. mod.id .. "' is missing dependency "
+			if not mentionedMod then
+				table.insert(problems, (dep_problem.."'%s': not installed"):format(id))
+			elseif not mentionedMod.enabled then
+				table.insert(problems, (dep_problem.."'%s': not enabled"):format(id))
+			elseif version ~= "" and not checkVersion(mentionedMod.version, version) then
+				table.insert(problems, (dep_problem.."'%s': wrong version (%s), expected '%s'"):format(id, mentionedMod.version, version))
+			end
 		end
 	end
 
-	for id,version in pairs(mod.conflicts) do
-		local mentionedMod = loader.mods[id]
-		if mentionedMod and mentionedMod.enabled then
-			if version == "" then
-				table.insert(problems, ("'%s' is incompatible with '%s'"):format(mod.id, id))
-			elseif checkVersion(mentionedMod.version, version) then
-				table.insert(problems, ("'%s' is incompatible with '%s' version '%s'"):format(mod.id, id, version))
+	if mod.conflicts then
+		for id,version in pairs(mod.conflicts) do
+			local mentionedMod = loader.mods[id]
+			if mentionedMod and mentionedMod.enabled then
+				if version == "" then
+					table.insert(problems, ("'%s' is incompatible with '%s'"):format(mod.id, id))
+				elseif checkVersion(mentionedMod.version, version) then
+					table.insert(problems, ("'%s' is incompatible with '%s' version '%s'"):format(mod.id, id, version))
+				end
 			end
 		end
 	end
@@ -289,14 +293,14 @@ function loader.checkDependsConflicts()
 	for id,mod in pairs(loader.mods) do
 		if not mod.enabled then goto continue end
 
-		local p = checkModDependsConflicts(mod)
+		local p = loader.checkModDependsConflicts(mod)
 		if #p > 0 then
 			table.insert(problems, table.concat(p, "\n"))
 		end
 
 		::continue::
 	end
-	if #problems == 0 then
+	if bbp.utils.countTable(problems) == 0 then
 		return nil
 	end
 	return table.concat(problems, "\n\n")
@@ -422,7 +426,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 			escapebutton = 1,
 			enterbutton = 3,
 		}
-		local pressed = love.window.showMessageBox("Incompatible mods!", problems.."\n\nWe recommend resolving these issues in the mod menu before continuing.", buttons, "error", false)
+		local pressed = love.window.showMessageBox("You have incompatible mods!", problems.."\n\nYou should resolve these issues in the mod menu before continuing.", buttons, "error", false)
 		if pressed == 1 then
 			love.event.quit()
 		elseif pressed == 2 then
