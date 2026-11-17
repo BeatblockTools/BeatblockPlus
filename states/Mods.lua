@@ -388,59 +388,67 @@ st:setFgDraw(function(self)
 		self.nextPopupTitle = nil
 	end
 
-	-- display the newly triggered popup
-	local popupFlags = bit.bor(
+	local function beginPopup(title)
+		local popupFlags = bit.bor(
 			imgui.ImGuiWindowFlags_AlwaysAutoResize,
 			imgui.ImGuiWindowFlags_NoResize,
 			imgui.ImGuiWindowFlags_NoMove,
 			imgui.ImGuiWindowFlags_NoSavedSettings,
 			imgui.ImGuiWindowFlags_NoTitleBar
 		)
+		if imgui.BeginPopupModal(title, nil, popupFlags) then
+			-- center der the popup
+			local popup_size = imgui.GetWindowSize()
+			imgui.SetWindowPos_Vec2(imgui.ImVec2_Float(
+				(windowWidth - popup_size.x)/2 ,
+				(windowHeight - popup_size.y)/2
+			))
+			-- close on outside click
+			if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
+				imgui.CloseCurrentPopup()
+			end
 
-	local function close_popup_on_outside_click()
-		if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
-			imgui.CloseCurrentPopup()
+			return true
 		end
+		return false
 	end
 
 	local function defaultPopupBody(text)
-		close_popup_on_outside_click()
-
 		imgui.Text(text)
-
 		imgui.Separator()
 		if imgui.Button("OK") then
 			imgui.CloseCurrentPopup()
 		end
+	end
 
+	local function endPopup()
 		imgui.SetItemDefaultFocus()
+		imgui.EndPopup()
 	end
 
-	if imgui.BeginPopupModal("error: invalid file type dropped", nil, popupFlags) then
+	if beginPopup("error: invalid file type dropped") then
 		defaultPopupBody("Could not identify the dropped file type. Make sure you're using a .zip file.\nNo mod was added.")
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("error: no mod.json found", nil, popupFlags) then
+	if beginPopup("error: no mod.json found") then
 		defaultPopupBody("The file doesn't contain a mod.json.\nNo mod was added.")
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("error: mod already exists", nil, popupFlags) then
+	if beginPopup("error: mod already exists") then
 		defaultPopupBody("A mod with the folder name '"..self.popupData.modFolder.."' is already present.\n"..
 				"If you're trying to update, please remove the previous version from your Mods directory.\n"..
 				"No mod was added.")
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("error: failed to mount", nil, popupFlags) then
+	if beginPopup("error: failed to mount") then
 		defaultPopupBody("Failed to mount previously valid directory:\n".. self.popupData.path .."\n\nMaybe it was moved?")
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("input: new mod incompatible", nil, popupFlags) then
-		close_popup_on_outside_click()
-
+	if beginPopup("input: new mod incompatible") then
 		local modData = self.popupData.modData
 
 		imgui.TextUnformatted("The new mod will be incompatible with your current mod list!\n\n" .. self.popupData.problems ..
@@ -457,13 +465,10 @@ st:setFgDraw(function(self)
 			imgui.CloseCurrentPopup()
 		end
 
-		imgui.SetItemDefaultFocus()
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("input: update mod", nil, popupFlags) then
-		close_popup_on_outside_click()
-
+	if beginPopup("input: update mod") then
 		local modData = self.popupData.modData
 
 		imgui.Text("Are you sure, you want to update '" .. modData.name .. "' from " .. mods[modData.id].version ..
@@ -481,27 +486,25 @@ st:setFgDraw(function(self)
 			imgui.CloseCurrentPopup()
 		end
 
-		imgui.SetItemDefaultFocus()
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("info: successfully updated mod", nil, popupFlags) then
+	if beginPopup("info: successfully updated mod") then
 		local modData = self.popupData.modData
 		defaultPopupBody("The following mod has been updated: " ..
 				modData.name .. " (" .. modData.version .. ") by " .. modData.author
 				.."\nPlease restart the game.")
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("info: new mod added", nil, popupFlags) then
+	if beginPopup("info: new mod added") then
 		defaultPopupBody("The following mod has been added successfully: " ..
 				self.popupData.name .. " (" .. self.popupData.version .. ") by " .. self.popupData.author
 				.."\nRestart the game for the mod to take effect.")
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("input: reset config", nil, popupFlags) then
-		close_popup_on_outside_click()
+	if beginPopup("input: reset config") then
 
 		imgui.Text("Are you sure, you want to reset the config of '" .. self.popupData.name .. "' ?\n!! THIS CAN'T BE UNDONE !!")
 
@@ -530,29 +533,26 @@ st:setFgDraw(function(self)
 			imgui.CloseCurrentPopup()
 		end
 
-		imgui.SetItemDefaultFocus()
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("error: no config.json found", nil, popupFlags) then
+	if beginPopup("error: no config.json found") then
 		defaultPopupBody("No config file found at: " .. self.popupData.configPath)
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("info: successfully reset config", nil, popupFlags) then
+	if beginPopup("info: successfully reset config") then
 		defaultPopupBody("Config of '" .. self.popupData.name .. "' has been set to default.")
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("error: failed to delete config.json", nil, popupFlags) then
+	if beginPopup("error: failed to delete config.json") then
 		defaultPopupBody("Failed to delete config file: " .. self.popupData.configPath .."\n"..
 				"Make sure that you don't have the file open in another program.")
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("input: delete mod", nil, popupFlags) then
-		close_popup_on_outside_click()
-
+	if beginPopup("input: delete mod") then
 		imgui.Text("Are you sure, you want to delete '" .. self.popupData.name .. "' ?\n"..
 				"Mod path: " .. self.popupData.path .. "\n!! THIS CAN'T BE UNDONE !!")
 
@@ -574,24 +574,21 @@ st:setFgDraw(function(self)
 			imgui.CloseCurrentPopup()
 		end
 
-		imgui.SetItemDefaultFocus()
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("info: successfully deleted mod", nil, popupFlags) then
+	if beginPopup("info: successfully deleted mod") then
 		defaultPopupBody("The mod '" .. self.popupData.name .. "' has been deleted.\nPlease restart the game.")
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("error: failed to delete mod", nil, popupFlags) then
+	if beginPopup("error: failed to delete mod") then
 		defaultPopupBody("Failed to delete mod folder: " .. self.popupData.path .."\n"..
 				"Make sure that you don't have any files from the folder open in another program.")
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("input: restart game", nil, popupFlags) then
-		close_popup_on_outside_click()
-
+	if beginPopup("input: restart game") then
 		imgui.Text("Are you sure, you want to restart the game?")
 
 		imgui.Separator()
@@ -605,13 +602,10 @@ st:setFgDraw(function(self)
 			imgui.CloseCurrentPopup()
 		end
 
-		imgui.SetItemDefaultFocus()
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("input: quit with restart required", nil, popupFlags) then
-		close_popup_on_outside_click()
-
+	if beginPopup("input: quit with restart required") then
 		imgui.Text("You have made some changes that require a restart.\nPlease restart the game.")
 
 		imgui.Separator()
@@ -625,13 +619,10 @@ st:setFgDraw(function(self)
 			imgui.CloseCurrentPopup()
 		end
 
-		imgui.SetItemDefaultFocus()
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("input: quit with changed mod list", nil, popupFlags) then
-		close_popup_on_outside_click()
-
+	if beginPopup("input: quit with changed mod list") then
 		imgui.Text("You have enabled/disabled some of your mods.\nPlease restart the game, or revert these changes.")
 
 		imgui.Separator()
@@ -645,11 +636,10 @@ st:setFgDraw(function(self)
 			imgui.CloseCurrentPopup()
 		end
 
-		imgui.SetItemDefaultFocus()
-		imgui.EndPopup()
+		endPopup()
 	end
 
-	if imgui.BeginPopupModal("input: incompatible mods", nil, popupFlags) then
+	if beginPopup("input: incompatible mods") then
 		imgui.TextUnformatted("You have incompatible mods!\n\n" .. self.popupData.problems ..
 				"\n\nYou should resolve these issues before continuing.")
 		imgui.Separator()
@@ -669,8 +659,7 @@ st:setFgDraw(function(self)
 			love.event.quit()
 		end
 
-		imgui.SetItemDefaultFocus()
-		imgui.EndPopup()
+		endPopup()
 	end
 
 	imgui.End()
