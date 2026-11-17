@@ -121,6 +121,11 @@ function string:endsWith(ending)
 	return ending == "" or self:sub(- #ending) == ending
 end
 
+-- Checks if a string starts with another string
+function string:startsWith(start)
+	return start == "" or self:sub(1, #start) == start
+end
+
 -- Gets a list of all mod names, their versions and authors
 function utils.getModList()
 	if not (bbp and bbp.mods) or next(bbp.mods) == nil then
