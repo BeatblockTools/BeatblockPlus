@@ -130,7 +130,7 @@ function loader.deleteOldLogs()
 		end
 	end
 
-	local bbpConfig = mods["beatblock-plus"].bbpConfig
+	local bbpConfig = mods["beatblock-plus"].config
 
 	if bbpConfig.delete.crashreports then
 		deleteHere("crashreports", bbpConfig.keep.crashreports)
