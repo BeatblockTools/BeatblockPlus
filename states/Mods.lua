@@ -155,6 +155,12 @@ end
 
 function st:try_install_mod(actions)
 	actions = actions or {}
+
+	if self.installable_mod.droppedPath:match("Roaming\\beatblock\\Mods") then
+		openPopup("info: cant install mod from Mods folder")
+		return
+	end
+
 	local modData = self.installable_mod.modData
 	if actions.check_incompatibility then
 		local problems = bbp.loader.checkModDependsConflicts(modData)
@@ -177,7 +183,12 @@ function st:try_install_mod(actions)
 		return
 	end
 
-	local modPath = (mods[modData.id] and mods[modData.id].path or "Mods/") .. modData.id
+	local modPath
+	if mods[modData.id] then
+		modPath = mods[modData.id].path
+	else
+		modPath = "Mods/" .. modData.id
+	end
 
 	if actions.update then
 		-- configs will be recoverable in the crashlog if something goes wrong
@@ -465,6 +476,12 @@ st:setFgDraw(function(self)
 		endPopup()
 	end
 
+	if beginPopup("info: cant install mod from Mods folder") then
+		defaultPopupBody("The mod at path " .. self.installable_mod.droppedPath ..
+				"\ncan't be installed, because it's in the Mods folder. Please move it somewhere else and then try again.")
+		endPopup()
+	end
+	
 	if beginPopup("input: update mod") then
 		local modData = self.popupData.modData
 
