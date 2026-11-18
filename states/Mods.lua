@@ -58,7 +58,7 @@ local function renderModConfig(self, mod)
 	-- display some text next to the button for one second, so that the user knows that it worked
 	if self.savedConfigDisplayTimer then
 		if love.timer.getTime() - self.savedConfigDisplayTimer > 1 then
-			self.savedConfigDisplayTimer = nil --one second is over
+			self.savedConfigDisplayTimer = nil -- one second is over
 		else
 			imgui.SameLine()
 			imgui.Text("Saved!")
@@ -124,7 +124,7 @@ function st:tryExit()
 	local problems = bbp.loader.checkDependsConflicts()
 	if problems then
 		maininput:update()
-		openPopup("input: incompatible mods", {problems = problems})
+		openPopup("input: incompatible mods", { problems = problems })
 		return
 	end
 
@@ -166,21 +166,21 @@ function st:try_install_mod(actions)
 
 	if actions.check_for_update then
 		if mods[modData.id] then
-			openPopup("input: update mod", {modData=modData})
+			openPopup("input: update mod", { modData = modData })
 			return
 		end
 	end
 
 	local success = love.filesystem.mount(self.installable_mod.droppedPath, "draganddrop")
 	if not success then
-		openPopup("error: failed to mount", {path=self.installable_mod.droppedPath})
+		openPopup("error: failed to mount", { path = self.installable_mod.droppedPath })
 		return
 	end
 
-	local modPath = mods[modData.id] and mods[modData.id].path or "Mods/"..modData.id
+	local modPath = (mods[modData.id] and mods[modData.id].path or "Mods/") .. modData.id
 
 	if actions.update then
-		--configs will be recoverable in the crashlog if something goes wrong
+		-- configs will be recoverable in the crashlog if something goes wrong
 		self.config_temp_copy = helpers.copytable(mods[modData.id].config)
 
 		bbp.utils.deleteDirectory(modPath)
@@ -236,10 +236,10 @@ function st:handleDroppedMod(path)
 			return
 		end
 
-		self.installable_mod = { droppedPath=path,modData=modData,mountedPath=mountedPath }
-		self:try_install_mod({check_incompatibility=true,check_for_update=true})
+		self.installable_mod = { droppedPath = path, modData = modData, mountedPath = mountedPath }
+		self:try_install_mod({ check_incompatibility = true, check_for_update = true })
 	else
-		log("Error: didn't mount directory: "..path, "BBP")
+		log("Error: didn't mount directory: " .. path, "BBP")
 		return
 	end
 end
@@ -251,7 +251,6 @@ end
 function st:filedropped(file)
 	local path = file:getFilename()
 	if string.sub(path, -4, -1) ~= ".zip" then
-		-- log("Error: not a valid zip file: " .. path, "BBP")
 		openPopup("error: invalid file type dropped")
 		return
 	end
@@ -289,7 +288,7 @@ st:setFgDraw(function(self)
 
 	helpers.SetNextWindowPos(0, 0)
 	helpers.SetNextWindowSize(windowWidth, windowHeight)
-	--												423
+
 	local appliedBBPTheme = false -- The following config may change mid draw call
 	if mod.config.lightMode then
 		bbp.gui.pushStyle()
@@ -322,24 +321,22 @@ st:setFgDraw(function(self)
 
 		-- mod icon
 		local modIcon = mod.icon or sprites.bbp.missing
-		if modIcon then
-			imgui.SetColumnWidth(imgui.GetColumnIndex(), 82 * 2)
-			local imageSizeX = 73 * 2
-			local imageSizeY = 33 * 2
-			imgui.Image(modIcon, imgui.ImVec2_Float(imageSizeX, imageSizeY))
-			imgui.NextColumn()
-		end
+		imgui.SetColumnWidth(imgui.GetColumnIndex(), 82 * 2)
+		local imageSizeX = 73 * 2
+		local imageSizeY = 33 * 2
+		imgui.Image(modIcon, imgui.ImVec2_Float(imageSizeX, imageSizeY))
+		imgui.NextColumn()
 
 		-- mod details (name, icon, version, etc.)
 		imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth)
 		imgui.Text(mod.name .. " by " .. mod.author .. " (" .. mod.version .. ")")
-		
+
 		-- for mods that were just updated or deleted
 		if mod.notSelectable then
 			imgui.SameLine()
 			imgui.Text("[please restart]")
 		end
-		
+
 		imgui.TextWrapped(mod.description)
 
 		-- show config when clicked
@@ -384,7 +381,7 @@ st:setFgDraw(function(self)
 	if self.nextPopupTitle then
 		log("Info: opening popup '" .. self.nextPopupTitle .. "'", "BBP")
 		imgui.OpenPopup_Str(self.nextPopupTitle)
-		te.playOne(sounds.barely,"static",'sfx',1.5)
+		te.playOne(sounds.barely, "static", 'sfx', 1.5)
 		self.nextPopupTitle = nil
 	end
 
@@ -400,8 +397,8 @@ st:setFgDraw(function(self)
 			-- center der the popup
 			local popup_size = imgui.GetWindowSize()
 			imgui.SetWindowPos_Vec2(imgui.ImVec2_Float(
-				(windowWidth - popup_size.x)/2 ,
-				(windowHeight - popup_size.y)/2
+				(windowWidth - popup_size.x) / 2,
+				(windowHeight - popup_size.y) / 2
 			))
 			-- close on outside click
 			if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
@@ -437,14 +434,14 @@ st:setFgDraw(function(self)
 	end
 
 	if beginPopup("error: mod already exists") then
-		defaultPopupBody("A mod with the folder name '"..self.popupData.modFolder.."' is already present.\n"..
+		defaultPopupBody("A mod with the folder name '" .. self.popupData.modFolder .. "' is already present.\n"..
 				"If you're trying to update, please remove the previous version from your Mods directory.\n"..
 				"No mod was added.")
 		endPopup()
 	end
 
 	if beginPopup("error: failed to mount") then
-		defaultPopupBody("Failed to mount previously valid directory:\n".. self.popupData.path .."\n\nMaybe it was moved?")
+		defaultPopupBody("Failed to mount previously valid directory:\n" .. self.popupData.path .. "\n\nMaybe it was moved?")
 		endPopup()
 	end
 
@@ -457,7 +454,7 @@ st:setFgDraw(function(self)
 		imgui.Separator()
 
 		if imgui.Button("Install anyway") then
-			self:try_install_mod({check_for_update=true})
+			self:try_install_mod({ check_for_update = true })
 		end
 
 		imgui.SameLine()
@@ -478,7 +475,7 @@ st:setFgDraw(function(self)
 		imgui.Separator()
 
 		if imgui.Button("Yes") then
-			self:try_install_mod({update=true})
+			self:try_install_mod({ update = true })
 		end
 
 		imgui.SameLine()
