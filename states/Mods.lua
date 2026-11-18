@@ -394,7 +394,7 @@ st:setFgDraw(function(self)
 			imgui.ImGuiWindowFlags_NoTitleBar
 		)
 		if imgui.BeginPopupModal(title, nil, popupFlags) then
-			-- center der the popup
+			-- center the popup
 			local popup_size = imgui.GetWindowSize()
 			imgui.SetWindowPos_Vec2(imgui.ImVec2_Float(
 				(windowWidth - popup_size.x) / 2,
