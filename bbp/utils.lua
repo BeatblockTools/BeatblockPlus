@@ -140,6 +140,8 @@ function utils.getModList()
 		end
 	end
 
+	table.sort(modList)
+
 	return table.concat(modList, "\n")
 end
 
