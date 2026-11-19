@@ -305,377 +305,392 @@ st:setFgDraw(function(self)
 		bbp.gui.pushStyle()
 		appliedBBPTheme = true
 	end
-	imgui.Begin("Mods", true, 295) -- notitlebar, noresize, nomove, nocollapse, nobackground, nosavedsettings
+	if imgui.Begin("Mods", true, 295) then -- notitlebar, noresize, nomove, nocollapse, nobackground, nosavedsettings
+		imgui.SetWindowFontScale(2)
+		local style = imgui.GetStyle()
+		local nextText = "To install a mod, drag and drop the zip file into this menu"
+		local nextPos = imgui.GetContentRegionAvail().x - imgui.CalcTextSize(nextText).x + style.ItemSpacing.x
 
-	imgui.SetWindowFontScale(2)
-	imgui.Text("Mods: " .. tostring(countEnabledMods()) .. " / " .. tostring(countMods()))
-	imgui.SameLine(200)
-	imgui.Text("To install a mod, drag and drop the zip file into this menu.")
-	imgui.SetWindowFontScale(1)
-	imgui.Separator()
+		imgui.Text("Mods: " .. tostring(countEnabledMods()) .. " / " .. tostring(countMods()))
+		imgui.SameLine(nextPos)
+		imgui.Text(nextText)
+		imgui.SetWindowFontScale(1)
+		imgui.Separator()
 
-	imgui.BeginChild_Str("mod_list_and_config", imgui.ImVec2_Float(windowWidth -20, windowHeight - 90), 0)
+		local maxHeight = imgui.GetContentRegionAvail().y - imgui.GetFontSize() - 3 * style.ItemSpacing.y - 2 * style.FramePadding.y
 
-	imgui.Columns(2, "main", true)
-	imgui.SetColumnWidth(imgui.GetColumnIndex(), windowWidth * 0.6)
+		if imgui.BeginTable("mod_list_and_config_table", 2, imgui.ImGuiTableFlags_BordersInnerV) then
+			imgui.TableSetupColumn("", imgui.ImGuiTableColumnFlags_WidthStretch, 6)
+			imgui.TableSetupColumn("", imgui.ImGuiTableColumnFlags_WidthStretch, 4)
+			imgui.TableNextColumn()
 
-	-- start drawing mod boxes
-	imgui.BeginChild_Str("mod_list", imgui.ImVec2_Float(550 / 600 * windowWidth, windowHeight - 90), 0)
 
-	for _, modID in pairs(self.sortedIDs) do
-		local mod = bbp.mods[modID]
-		local childWidth = windowWidth * 0.59
-		local childHeight = 42 * 2 -- just enough to fit the mod icon
-		imgui.BeginChild_Str("mod_" .. mod.id, imgui.ImVec2_Float(childWidth, childHeight), 1)
+			-- start drawing mod boxes
+			if imgui.BeginChild_Str("mod_list", imgui.ImVec2_Float(0, maxHeight)) then
+				local imageSizeX = 73 * 2
+				local imageSizeY = 33 * 2
 
-		imgui.Columns(2, "mod_details_" .. mod.id, true)
+				for _, modID in ipairs(self.sortedIDs) do
+					local mod = bbp.mods[modID]
 
-		-- mod icon
-		local modIcon = mod.icon or sprites.bbp.missing
-		imgui.SetColumnWidth(imgui.GetColumnIndex(), 82 * 2)
-		local imageSizeX = 73 * 2
-		local imageSizeY = 33 * 2
-		imgui.Image(modIcon, imgui.ImVec2_Float(imageSizeX, imageSizeY))
-		imgui.NextColumn()
+					if imgui.BeginChild_Str("child_mod_" .. mod.id, nil, imgui.ImGuiChildFlags_Border + imgui.ImGuiChildFlags_AutoResizeY) then -- mod box: size undefined to fit table size below
+						if imgui.BeginTable("table_mod_" .. mod.id, 2, imgui.ImGuiTableFlags_BordersInnerV) then
+							imgui.TableSetupColumn("", imgui.ImGuiTableColumnFlags_WidthFixed)
+							imgui.TableSetupColumn("", imgui.ImGuiTableColumnFlags_WidthStretch, 0)
+							imgui.TableNextColumn()
 
-		-- mod details (name, icon, version, etc.)
-		imgui.SetColumnWidth(imgui.GetColumnIndex(), childWidth)
-		imgui.Text(mod.name .. " by " .. mod.author .. " (" .. mod.version .. ")")
+							-- mod icon
+							local modIcon = mod.icon or sprites.bbp.missing
+							imgui.Image(modIcon, imgui.ImVec2_Float(imageSizeX, imageSizeY))
 
-		-- for mods that were just updated or deleted
-		if mod.notSelectable then
+							imgui.TableNextColumn()
+
+							if imgui.BeginChild_Str("data_mod_" .. mod.id, imgui.ImVec2_Float(0, imageSizeY), nil, imgui.ImGuiWindowFlags_NoMouseInputs) then
+								-- mod details (name, icon, version, etc.)
+								imgui.Text(mod.name .. " by " .. mod.author .. " (" .. mod.version .. ")")
+
+								-- for mods that were just updated or deleted
+								if mod.notSelectable then
+									imgui.SameLine()
+									imgui.Text("[please restart]")
+								end
+
+								imgui.TextWrapped(mod.description)
+							end
+							imgui.EndChild()
+
+							imgui.EndTable() -- end mod box
+						end
+					end
+
+					-- show config when clicked
+					if imgui.IsWindowHovered() and imgui.IsMouseClicked(0) and not mod.notSelectable then -- left click
+						self.selectedModId = mod.id
+					end
+
+					imgui.EndChild()
+				end
+			end
+			imgui.EndChild() -- end mod list
+
+			imgui.TableNextColumn()
+
+			-- start a new child for config because imgui likes to break everything otherwise
+			if imgui.BeginChild_Str("mod_config_" .. self.selectedModId, imgui.ImVec2_Float(0, maxHeight)) then
+				renderModConfig(self, bbp.mods[self.selectedModId])
+			end
+			imgui.EndChild()
+
+			imgui.EndTable() -- end mod list and config
+		end
+
+		imgui.Separator()
+
+		if imgui.Button("Go Back") then
+			self:tryExit()
+		end
+
+		imgui.SameLine()
+
+		if imgui.Button("Restart Game") then
+			openPopup("input: restart game")
+		end
+
+		imgui.SameLine()
+
+		if imgui.Button("Open Mods Folder") then
+			love.system.openURL("file://" .. love.filesystem.getSaveDirectory() .. '/Mods')
+		end
+
+		--popups
+
+		if self.nextPopupTitle then
+			log("Info: opening popup '" .. self.nextPopupTitle .. "'", "BBP")
+			imgui.OpenPopup_Str(self.nextPopupTitle)
+			te.playOne(sounds.barely, "static", 'sfx', 1.5)
+			self.nextPopupTitle = nil
+		end
+
+		local function beginPopup(title)
+			local popupFlags = bit.bor(
+				imgui.ImGuiWindowFlags_AlwaysAutoResize,
+				imgui.ImGuiWindowFlags_NoResize,
+				imgui.ImGuiWindowFlags_NoMove,
+				imgui.ImGuiWindowFlags_NoSavedSettings,
+				imgui.ImGuiWindowFlags_NoTitleBar
+			)
+			if imgui.BeginPopupModal(title, nil, popupFlags) then
+				-- center the popup
+				local popup_size = imgui.GetWindowSize()
+				imgui.SetWindowPos_Vec2(imgui.ImVec2_Float(
+					(windowWidth - popup_size.x) / 2,
+					(windowHeight - popup_size.y) / 2
+				))
+				-- close on outside click
+				if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
+					imgui.CloseCurrentPopup()
+				end
+
+				return true
+			end
+			return false
+		end
+
+		local function defaultPopupBody(text)
+			imgui.Text(text)
+			imgui.Separator()
+			if imgui.Button("OK") then
+				imgui.CloseCurrentPopup()
+			end
+		end
+
+		local function endPopup()
+			imgui.SetItemDefaultFocus()
+			imgui.EndPopup()
+		end
+
+		if beginPopup("error: invalid file type dropped") then
+			defaultPopupBody("Could not identify the dropped file type. Make sure you're using a .zip file.\nNo mod was added.")
+			endPopup()
+		end
+
+		if beginPopup("error: no mod.json found") then
+			defaultPopupBody("The file doesn't contain a mod.json.\nNo mod was added.")
+			endPopup()
+		end
+
+		if beginPopup("error: mod already exists") then
+			defaultPopupBody("A mod with the folder name '" .. self.popupData.modFolder .. "' is already present.\n"..
+					"If you're trying to update, please remove the previous version from your Mods directory.\n"..
+					"No mod was added.")
+			endPopup()
+		end
+
+		if beginPopup("error: failed to mount") then
+			defaultPopupBody("Failed to mount previously valid directory:\n" .. self.popupData.path .. "\n\nMaybe it was moved?")
+			endPopup()
+		end
+
+		if beginPopup("input: new mod incompatible") then
+			local modData = self.popupData.modData
+
+			imgui.TextUnformatted("The new mod will be incompatible with your current mod list!\n\n" .. self.popupData.problems ..
+					"\n\nYou should resolve these issues before installing the mod.")
+
+			imgui.Separator()
+
+			if imgui.Button("Install anyway") then
+				self:try_install_mod({ check_for_update = true })
+			end
+
 			imgui.SameLine()
-			imgui.Text("[please restart]")
-		end
-
-		imgui.TextWrapped(mod.description)
-
-		-- show config when clicked
-		if imgui.IsWindowHovered() and imgui.IsMouseClicked(0) and not mod.notSelectable then -- left click
-			self.selectedModId = mod.id
-		end
-
-		imgui.EndChild() -- end mod box
-	end
-
-	imgui.EndChild() -- end mod list
-
-	imgui.NextColumn()
-	imgui.SetColumnWidth(imgui.GetColumnIndex(), windowWidth * 0.39)
-
-	-- start a new child for config because imgui likes to break everything otherwise
-	imgui.BeginChild_Str("mod_config_" .. self.selectedModId, imgui.ImVec2_Float(0, 0), false)
-	renderModConfig(self, bbp.mods[self.selectedModId])
-	imgui.EndChild()
-
-	imgui.EndChild() -- end mod list and config
-	imgui.Separator()
-
-	if imgui.Button("Go Back") then
-		self:tryExit()
-	end
-
-	imgui.SameLine()
-
-	if imgui.Button("Restart Game") then
-		openPopup("input: restart game")
-	end
-
-	imgui.SameLine()
-
-	if imgui.Button("Open Mods Folder") then
-		love.system.openURL("file://" .. love.filesystem.getSaveDirectory() .. '/Mods')
-	end
-
-	--popups
-
-	if self.nextPopupTitle then
-		log("Info: opening popup '" .. self.nextPopupTitle .. "'", "BBP")
-		imgui.OpenPopup_Str(self.nextPopupTitle)
-		te.playOne(sounds.barely, "static", 'sfx', 1.5)
-		self.nextPopupTitle = nil
-	end
-
-	local function beginPopup(title)
-		local popupFlags = bit.bor(
-			imgui.ImGuiWindowFlags_AlwaysAutoResize,
-			imgui.ImGuiWindowFlags_NoResize,
-			imgui.ImGuiWindowFlags_NoMove,
-			imgui.ImGuiWindowFlags_NoSavedSettings,
-			imgui.ImGuiWindowFlags_NoTitleBar
-		)
-		if imgui.BeginPopupModal(title, nil, popupFlags) then
-			-- center the popup
-			local popup_size = imgui.GetWindowSize()
-			imgui.SetWindowPos_Vec2(imgui.ImVec2_Float(
-				(windowWidth - popup_size.x) / 2,
-				(windowHeight - popup_size.y) / 2
-			))
-			-- close on outside click
-			if imgui.IsKeyChordPressed(655) and not imgui.IsWindowHovered() then
+			if imgui.Button("Cancel") then
 				imgui.CloseCurrentPopup()
 			end
 
-			return true
-		end
-		return false
-	end
-
-	local function defaultPopupBody(text)
-		imgui.Text(text)
-		imgui.Separator()
-		if imgui.Button("OK") then
-			imgui.CloseCurrentPopup()
-		end
-	end
-
-	local function endPopup()
-		imgui.SetItemDefaultFocus()
-		imgui.EndPopup()
-	end
-
-	if beginPopup("error: invalid file type dropped") then
-		defaultPopupBody("Could not identify the dropped file type. Make sure you're using a .zip file.\nNo mod was added.")
-		endPopup()
-	end
-
-	if beginPopup("error: no mod.json found") then
-		defaultPopupBody("The file doesn't contain a mod.json.\nNo mod was added.")
-		endPopup()
-	end
-
-	if beginPopup("error: mod already exists") then
-		defaultPopupBody("A mod with the folder name '" .. self.popupData.modFolder .. "' is already present.\n"..
-				"If you're trying to update, please remove the previous version from your Mods directory.\n"..
-				"No mod was added.")
-		endPopup()
-	end
-
-	if beginPopup("error: failed to mount") then
-		defaultPopupBody("Failed to mount previously valid directory:\n" .. self.popupData.path .. "\n\nMaybe it was moved?")
-		endPopup()
-	end
-
-	if beginPopup("input: new mod incompatible") then
-		local modData = self.popupData.modData
-
-		imgui.TextUnformatted("The new mod will be incompatible with your current mod list!\n\n" .. self.popupData.problems ..
-				"\n\nYou should resolve these issues before installing the mod.")
-
-		imgui.Separator()
-
-		if imgui.Button("Install anyway") then
-			self:try_install_mod({ check_for_update = true })
+			endPopup()
 		end
 
-		imgui.SameLine()
-		if imgui.Button("Cancel") then
-			imgui.CloseCurrentPopup()
+		if beginPopup("info: cant install mod from Mods folder") then
+			defaultPopupBody("The mod at path " .. self.installable_mod.droppedPath ..
+					"\ncan't be installed, because it's in the Mods folder. Please move it somewhere else and then try again.")
+			endPopup()
 		end
 
-		endPopup()
-	end
+		if beginPopup("input: update mod") then
+			local modData = self.popupData.modData
 
-	if beginPopup("info: cant install mod from Mods folder") then
-		defaultPopupBody("The mod at path " .. self.installable_mod.droppedPath ..
-				"\ncan't be installed, because it's in the Mods folder. Please move it somewhere else and then try again.")
-		endPopup()
-	end
-	
-	if beginPopup("input: update mod") then
-		local modData = self.popupData.modData
+			imgui.Text("Are you sure, you want to update '" .. modData.name .. "' from " .. mods[modData.id].version ..
+					" to " .. modData.version .. " ?\nMod path: " .. mods[modData.id].path ..
+					"\nYour configs will be carried over. !! THIS CAN'T BE UNDONE !!")
 
-		imgui.Text("Are you sure, you want to update '" .. modData.name .. "' from " .. mods[modData.id].version ..
-				" to " .. modData.version .. " ?\nMod path: " .. mods[modData.id].path ..
-				"\nYour configs will be carried over. !! THIS CAN'T BE UNDONE !!")
+			imgui.Separator()
 
-		imgui.Separator()
-
-		if imgui.Button("Yes") then
-			self:try_install_mod({ update = true })
-		end
-
-		imgui.SameLine()
-		if imgui.Button("No") then
-			imgui.CloseCurrentPopup()
-		end
-
-		endPopup()
-	end
-
-	if beginPopup("info: successfully updated mod") then
-		local modData = self.popupData.modData
-		defaultPopupBody("The following mod has been updated: " ..
-				modData.name .. " (" .. modData.version .. ") by " .. modData.author
-				.."\nPlease restart the game.")
-		endPopup()
-	end
-
-	if beginPopup("info: new mod added") then
-		defaultPopupBody("The following mod has been added successfully: " ..
-				self.popupData.name .. " (" .. self.popupData.version .. ") by " .. self.popupData.author
-				.."\nRestart the game for the mod to take effect.")
-		endPopup()
-	end
-
-	if beginPopup("input: reset config") then
-
-		imgui.Text("Are you sure, you want to reset the config of '" .. self.popupData.name .. "' ?\n!! THIS CAN'T BE UNDONE !!")
-
-		imgui.Separator()
-
-		if imgui.Button("Yes") then
-			self.popupData.configPath = self.popupData.path .. "/config.json"
-
-			if not love.filesystem.getInfo(self.popupData.configPath) then
-				openPopup("error: no config.json found", self.popupData)
+			if imgui.Button("Yes") then
+				self:try_install_mod({ update = true })
 			end
 
-			dpf.saveJson(self.popupData.configPath, mod.config)
-
-			local success = love.filesystem.remove(self.popupData.configPath)
-			if success then
-				bbp.mods[self.popupData.id].config = helpers.copy(bbp.mods[self.popupData.id].defaultConfig)
-				openPopup("info: successfully reset config", self.popupData)
-			else
-				openPopup("error: failed to delete config.json", self.popupData)
+			imgui.SameLine()
+			if imgui.Button("No") then
+				imgui.CloseCurrentPopup()
 			end
+
+			endPopup()
 		end
 
-		imgui.SameLine()
-		if imgui.Button("No") then
-			imgui.CloseCurrentPopup()
+		if beginPopup("info: successfully updated mod") then
+			local modData = self.popupData.modData
+			defaultPopupBody("The following mod has been updated: " ..
+					modData.name .. " (" .. modData.version .. ") by " .. modData.author
+					.."\nPlease restart the game.")
+			endPopup()
 		end
 
-		endPopup()
-	end
+		if beginPopup("info: new mod added") then
+			defaultPopupBody("The following mod has been added successfully: " ..
+					self.popupData.name .. " (" .. self.popupData.version .. ") by " .. self.popupData.author
+					.."\nRestart the game for the mod to take effect.")
+			endPopup()
+		end
 
-	if beginPopup("error: no config.json found") then
-		defaultPopupBody("No config file found at: " .. self.popupData.configPath)
-		endPopup()
-	end
+		if beginPopup("input: reset config") then
 
-	if beginPopup("info: successfully reset config") then
-		defaultPopupBody("Config of '" .. self.popupData.name .. "' has been set to default.")
-		endPopup()
-	end
+			imgui.Text("Are you sure, you want to reset the config of '" .. self.popupData.name .. "' ?\n!! THIS CAN'T BE UNDONE !!")
 
-	if beginPopup("error: failed to delete config.json") then
-		defaultPopupBody("Failed to delete config file: " .. self.popupData.configPath .."\n"..
-				"Make sure that you don't have the file open in another program.")
-		endPopup()
-	end
+			imgui.Separator()
 
-	if beginPopup("input: delete mod") then
-		imgui.Text("Are you sure, you want to delete '" .. self.popupData.name .. "' ?\n"..
-				"Mod path: " .. self.popupData.path .. "\n!! THIS CAN'T BE UNDONE !!")
+			if imgui.Button("Yes") then
+				self.popupData.configPath = self.popupData.path .. "/config.json"
 
-		imgui.Separator()
+				if not love.filesystem.getInfo(self.popupData.configPath) then
+					openPopup("error: no config.json found", self.popupData)
+				end
 
-		if imgui.Button("Yes") then
-			bbp.utils.deleteDirectory(self.popupData.path)
-			if not love.filesystem.getInfo(self.popupData.path) then
-				bbp.utils.setRestartRequired()
-				rawset(mods[self.popupData.id], "notSelectable", true)
-				openPopup("info: successfully deleted mod", self.popupData)
-			else
-				openPopup("error: failed to delete mod", self.popupData)
+				dpf.saveJson(self.popupData.configPath, mod.config)
+
+				local success = love.filesystem.remove(self.popupData.configPath)
+				if success then
+					bbp.mods[self.popupData.id].config = helpers.copy(bbp.mods[self.popupData.id].defaultConfig)
+					openPopup("info: successfully reset config", self.popupData)
+				else
+					openPopup("error: failed to delete config.json", self.popupData)
+				end
 			end
+
+			imgui.SameLine()
+			if imgui.Button("No") then
+				imgui.CloseCurrentPopup()
+			end
+
+			endPopup()
 		end
 
-		imgui.SameLine()
-		if imgui.Button("No") then
-			imgui.CloseCurrentPopup()
+		if beginPopup("error: no config.json found") then
+			defaultPopupBody("No config file found at: " .. self.popupData.configPath)
+			endPopup()
 		end
 
-		endPopup()
+		if beginPopup("info: successfully reset config") then
+			defaultPopupBody("Config of '" .. self.popupData.name .. "' has been set to default.")
+			endPopup()
+		end
+
+		if beginPopup("error: failed to delete config.json") then
+			defaultPopupBody("Failed to delete config file: " .. self.popupData.configPath .."\n"..
+					"Make sure that you don't have the file open in another program.")
+			endPopup()
+		end
+
+		if beginPopup("input: delete mod") then
+			imgui.Text("Are you sure, you want to delete '" .. self.popupData.name .. "' ?\n"..
+					"Mod path: " .. self.popupData.path .. "\n!! THIS CAN'T BE UNDONE !!")
+
+			imgui.Separator()
+
+			if imgui.Button("Yes") then
+				bbp.utils.deleteDirectory(self.popupData.path)
+				if not love.filesystem.getInfo(self.popupData.path) then
+					bbp.utils.setRestartRequired()
+					rawset(mods[self.popupData.id], "notSelectable", true)
+					openPopup("info: successfully deleted mod", self.popupData)
+				else
+					openPopup("error: failed to delete mod", self.popupData)
+				end
+			end
+
+			imgui.SameLine()
+			if imgui.Button("No") then
+				imgui.CloseCurrentPopup()
+			end
+
+			endPopup()
+		end
+
+		if beginPopup("info: successfully deleted mod") then
+			defaultPopupBody("The mod '" .. self.popupData.name .. "' has been deleted.\nPlease restart the game.")
+			endPopup()
+		end
+
+		if beginPopup("error: failed to delete mod") then
+			defaultPopupBody("Failed to delete mod folder: " .. self.popupData.path .."\n"..
+					"Make sure that you don't have any files from the folder open in another program.")
+			endPopup()
+		end
+
+		if beginPopup("input: restart game") then
+			imgui.Text("Are you sure, you want to restart the game?")
+
+			imgui.Separator()
+
+			if imgui.Button("Yes") then
+				bbp.utils.restart()
+			end
+
+			imgui.SameLine()
+			if imgui.Button("No") then
+				imgui.CloseCurrentPopup()
+			end
+
+			endPopup()
+		end
+
+		if beginPopup("input: quit with restart required") then
+			imgui.Text("You have made some changes that require a restart.\nPlease restart the game.")
+
+			imgui.Separator()
+
+			if imgui.Button("Yes, restart now") then
+				bbp.utils.restart()
+			end
+
+			imgui.SameLine()
+			if imgui.Button("No, return to mod menu") then
+				imgui.CloseCurrentPopup()
+			end
+
+			endPopup()
+		end
+
+		if beginPopup("input: quit with changed mod list") then
+			imgui.Text("You have enabled/disabled some of your mods.\nPlease restart the game, or revert these changes.")
+
+			imgui.Separator()
+
+			if imgui.Button("Yes, restart now") then
+				bbp.utils.restart()
+			end
+
+			imgui.SameLine()
+			if imgui.Button("No, return to mod menu") then
+				imgui.CloseCurrentPopup()
+			end
+
+			endPopup()
+		end
+
+		if beginPopup("input: incompatible mods") then
+			imgui.TextUnformatted("You have incompatible mods!\n\n" .. self.popupData.problems ..
+					"\n\nYou should resolve these issues before continuing.")
+			imgui.Separator()
+
+			if imgui.Button("Stay in mod menu") then
+				imgui.CloseCurrentPopup()
+			end
+
+			imgui.SameLine()
+			if imgui.Button("Continue anyway") then
+				imgui.CloseCurrentPopup()
+				st:loadMainMenu()
+			end
+
+			imgui.SameLine()
+			if imgui.Button("Close Beatblock") then
+				love.event.quit()
+			end
+
+			endPopup()
+		end
 	end
-
-	if beginPopup("info: successfully deleted mod") then
-		defaultPopupBody("The mod '" .. self.popupData.name .. "' has been deleted.\nPlease restart the game.")
-		endPopup()
-	end
-
-	if beginPopup("error: failed to delete mod") then
-		defaultPopupBody("Failed to delete mod folder: " .. self.popupData.path .."\n"..
-				"Make sure that you don't have any files from the folder open in another program.")
-		endPopup()
-	end
-
-	if beginPopup("input: restart game") then
-		imgui.Text("Are you sure, you want to restart the game?")
-
-		imgui.Separator()
-
-		if imgui.Button("Yes") then
-			bbp.utils.restart()
-		end
-
-		imgui.SameLine()
-		if imgui.Button("No") then
-			imgui.CloseCurrentPopup()
-		end
-
-		endPopup()
-	end
-
-	if beginPopup("input: quit with restart required") then
-		imgui.Text("You have made some changes that require a restart.\nPlease restart the game.")
-
-		imgui.Separator()
-
-		if imgui.Button("Yes, restart now") then
-			bbp.utils.restart()
-		end
-
-		imgui.SameLine()
-		if imgui.Button("No, return to mod menu") then
-			imgui.CloseCurrentPopup()
-		end
-
-		endPopup()
-	end
-
-	if beginPopup("input: quit with changed mod list") then
-		imgui.Text("You have enabled/disabled some of your mods.\nPlease restart the game, or revert these changes.")
-
-		imgui.Separator()
-
-		if imgui.Button("Yes, restart now") then
-			bbp.utils.restart()
-		end
-
-		imgui.SameLine()
-		if imgui.Button("No, return to mod menu") then
-			imgui.CloseCurrentPopup()
-		end
-
-		endPopup()
-	end
-
-	if beginPopup("input: incompatible mods") then
-		imgui.TextUnformatted("You have incompatible mods!\n\n" .. self.popupData.problems ..
-				"\n\nYou should resolve these issues before continuing.")
-		imgui.Separator()
-
-		if imgui.Button("Stay in mod menu") then
-			imgui.CloseCurrentPopup()
-		end
-
-		imgui.SameLine()
-		if imgui.Button("Continue anyway") then
-			imgui.CloseCurrentPopup()
-			st:loadMainMenu()
-		end
-
-		imgui.SameLine()
-		if imgui.Button("Close Beatblock") then
-			love.event.quit()
-		end
-
-		endPopup()
-	end
-
 	imgui.End()
 	if appliedBBPTheme then
 		bbp.gui.popStyle()
