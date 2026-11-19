@@ -87,22 +87,22 @@ function utils.loopFiles(table, dir, callback)
 end
 
 -- deletes all files and folders at a given directory (thanks, love2d docs)
-function utils.deleteDirectory( path )
-	local function recurse( path )
-		if love.filesystem.getInfo( path , "directory" ) then
-			for _, child in ipairs( love.filesystem.getDirectoryItems( path )) do
-				recurse( path .. '/' .. child )
-				love.filesystem.remove( path .. '/' .. child )
+function utils.deleteDirectory(path)
+	local function recurse(path)
+		if love.filesystem.getInfo(path , "directory") then
+			for _, child in ipairs(love.filesystem.getDirectoryItems(path)) do
+				recurse(path .. '/' .. child)
+				love.filesystem.remove(path .. '/' .. child)
 			end
-		elseif love.filesystem.getInfo( path ) then
-			local success = love.filesystem.remove( path )
+		elseif love.filesystem.getInfo(path) then
+			local success = love.filesystem.remove(path)
 			if not success then
 				log("failed to delete "..path,"BBP")
 			end
 		end
-		love.filesystem.remove( path )
+		love.filesystem.remove(path)
 	end
-	recurse( path )
+	recurse(path)
 end
 
 -- Extracts the file name from a file path without the directory and extension

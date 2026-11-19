@@ -22,10 +22,19 @@ function gui.getFont(id)
 	return _imguiFonts[id]
 end
 
+local function registerGameFont()
+	if love.filesystem.exists('assets/fonts/DigitalDisco-Thin-Edit.ttf') then
+		-- Registers the font with the better capital 'L' if available
+		-- it has the '-Edit' prefix so it might get removed at any point
+		return bbp.gui.registerFont('disco', 'assets/fonts/DigitalDisco-Thin-Edit.ttf', 16)
+	end
+	return bbp.gui.registerFont('disco', 'assets/fonts/DigitalDisco-Thin.ttf', 16)
+end
+
 -- Pushes the BeatblockPlus ImGui theme.
 -- Make sure to call bbp.gui.popStyle() after you are done!
 function gui.pushStyle()
-	local font = gui.getFont('disco') or bbp.gui.registerFont('disco', 'assets/fonts/DigitalDisco-Thin.ttf', 16)
+	local font = gui.getFont('disco') or registerGameFont()
 	imgui.PushFont(font)
 
 	imgui.PushStyleVar_Float(imgui.ImGuiStyleVar_FrameBorderSize,    1.0)

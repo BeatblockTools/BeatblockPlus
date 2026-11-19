@@ -12,17 +12,17 @@ local function setModChunkEnvironment(chunk, mod, setDeprecated)
 			if setDeprecated then
 				if k == "modId" then
 					log("The mod " .. mod.id ..
-						      " is using the deprecated 'modId' variable which will be removed in a future version. You should use 'mod.id' instead!","BBP")
+						      " is using the deprecated 'modId' variable which will be removed in a future version. You should use 'mod.id' instead!", "BBP")
 					return mod.id
 				end
 				if k == "modPath" then
 					log("The mod " .. mod.id ..
-						      " is using the deprecated 'modPath' variable which will be removed in a future version. You should use 'mod.path' instead!","BBP")
+						      " is using the deprecated 'modPath' variable which will be removed in a future version. You should use 'mod.path' instead!", "BBP")
 					return mod.path
 				end
 				if k == "modData" then
 					log("The mod " .. mod.id ..
-						      " is using the deprecated 'modData' variable which will be removed in a future version. You should use 'mod' instead!","BBP")
+						      " is using the deprecated 'modData' variable which will be removed in a future version. You should use 'mod' instead!", "BBP")
 					return mod
 				end
 			end
@@ -116,9 +116,11 @@ function loader.deleteOldLogs()
 				files[i] = {fullPath = fullPath, modtime = info.modtime}
 			end
 		end
+
 		table.sort(files, function(a, b)
 			return a.modtime > b.modtime
 		end)
+
 		for i, file in ipairs(files) do
 			if i > keep then
 				love.filesystem.remove(file.fullPath)
@@ -128,26 +130,29 @@ function loader.deleteOldLogs()
 		end
 	end
 
-	local config = mods["beatblock-plus"].config
+	local bbpConfig = mods["beatblock-plus"].config
 
-	if config.delete.crashreports then
-		deleteHere("crashreports", config.keep.crashreports)
+	if bbpConfig.delete.crashreports then
+		deleteHere("crashreports", bbpConfig.keep.crashreports)
 	end
 
-	if config.delete.logs then
-		deleteHere("logs", config.keep.logs)
+	if bbpConfig.delete.logs then
+		deleteHere("logs", bbpConfig.keep.logs)
 	end
 
-	if config.delete.lovelylog then
-		deleteHere("Mods/lovely/log", config.keep.lovelylog)
+	if bbpConfig.delete.lovelylog then
+		deleteHere("Mods/lovely/log", bbpConfig.keep.lovelylog)
 	end
 
 	local duration = love.timer.getTime() - start
-	log("took "..duration.." seconds to delete "..deletedCount.." old log files", "BBP_silent")
+	log("took " .. duration .. " seconds to delete " .. deletedCount .. " old log files", "BBP_silent")
 end
 
 function loader.loadModMetadata(modDir)
-	if not love.filesystem.getInfo(modDir .. "/mod.json", "file") then return end
+	if not love.filesystem.getInfo(modDir .. "/mod.json", "file") then
+		return
+	end
+
 	local modJson = dpf.loadJson(modDir .. "/mod.json")
 
 	local mod = {
@@ -163,6 +168,7 @@ function loader.loadModMetadata(modDir)
 		depends = modJson.depends or {},
 		conflicts = modJson.conflicts or {},
 	}
+
 	setmetatable(mod, {
 		__index = function(t, k)
 			if k == "enabled" then
@@ -197,7 +203,7 @@ function loader.loadModMetadata(modDir)
 	if love.filesystem.getInfo(mod.path .. "/icon.png", 'file') then
 		local modIcon = love.graphics.newImage(mod.path .. "/icon.png")
 		local width, height = modIcon:getDimensions()
-		assert(width == 73 and height == 33, ("Mod icon '%s' has invalid size. Mod icons must be 73x33."):format(mod.path.."/icon.png"))
+		assert(width == 73 and height == 33, ("Mod icon '%s' has invalid size. Mod icons must be 73x33."):format(mod.path .. "/icon.png"))
 		rawset(mod, "icon", modIcon)
 	end
 
@@ -214,14 +220,16 @@ local function checkVersion(ver, versions) -- check if `ver` is covered by `vers
 		for n in string.gmatch(v, "([^.]+)%.?") do
 			table.insert(r, tonumber(n:match("%d+")))
 		end
-		if #r == 0 then log("could not split version: "..v ,"BBP") end
+		if #r == 0 then
+			log("could not split version: "..v ,"BBP")
+		end
 		return r
 	end
 
 	local function compare(v1, v2, func, last) -- func should return true, false or nil
 		v1 = type(v1) == "table" and v1 or splitVersion(v1)
 		v2 = type(v2) == "table" and v2 or splitVersion(v2)
-		for i=1,math.max(#v1,#v2) do
+		for i = 1, math.max(#v1,#v2) do
 			local c = func(v1[i] or 0, v2[i] or 0)
 			if c ~= nil then return c end
 		end
@@ -290,8 +298,10 @@ end
 -- returns a (multiline) string with problems, or nil
 function loader.checkDependsConflicts()
 	local problems = {}
-	for id,mod in pairs(loader.mods) do
-		if not mod.enabled then goto continue end
+	for id, mod in pairs(loader.mods) do
+		if not mod.enabled then
+			goto continue
+		end
 
 		local p = loader.checkModDependsConflicts(mod)
 		if #p > 0 then
@@ -372,7 +382,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 				table.insert(customLanguages, fileName)
 				-- make sure we don't load english lang when owo is selected
 				if fileName == savedata.options.language then
-					log("injecting lang file " .. path .. "...","BBP_silent")
+					log("injecting lang file " .. path .. "..." , "BBP_silent")
 					local modLoc = dpf.loadJson(path, {})
 					mergeLangFiles(loc.json, modLoc)
 				end
@@ -386,18 +396,18 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 			if bs.states[fileName] then
 				setModChunkEnvironment(bs.states[fileName], mod)
 			else
-				log("failed to inject state " .. path,"BBP")
+				log("failed to inject state " .. path, "BBP")
 			end
 		end)
 
 		-- load entities
 		bbp.utils.loopFiles({}, mod.path .. "/entities", function(_, path, fileName)
-			log("injecting entity " .. path .. "...","BBP_silent")
+			log("injecting entity " .. path .. "...", "BBP_silent")
 			local chunk = love.filesystem.load(path)
 			if chunk then
 				em.entities[fileName] = setModChunkEnvironment(chunk, mod)()
 			else
-				log("failed to inject entity " .. path,"BBP")
+				log("failed to inject entity " .. path, "BBP")
 			end
 		end)
 
@@ -405,7 +415,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 		if love.filesystem.getInfo(mod.path .. "/main.lua") then
 			local chunk, errormsg = love.filesystem.load(mod.path .. "/main.lua")
 			if errormsg then
-				log("Error while loading the main.lua file of '" .. mod.id .. "': " .. errormsg,"BBP")
+				log("Error while loading the main.lua file of '" .. mod.id .. "': " .. errormsg, "BBP")
 			else
 				setModChunkEnvironment(chunk, mod, true)()
 			end
@@ -426,7 +436,7 @@ function loader.loadMods() -- loads mod data, assets, mod icons etc.
 			escapebutton = 1,
 			enterbutton = 3,
 		}
-		local pressed = love.window.showMessageBox("You have incompatible mods!", problems.."\n\nYou should resolve these issues in the mod menu before continuing.", buttons, "error", false)
+		local pressed = love.window.showMessageBox("You have incompatible mods!", problems .. "\n\nYou should resolve these issues in the mod menu before continuing.", buttons, "error", false)
 		if pressed == 1 then
 			love.event.quit()
 		elseif pressed == 2 then
