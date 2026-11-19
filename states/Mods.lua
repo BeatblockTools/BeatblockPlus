@@ -676,30 +676,6 @@ st:setFgDraw(function(self)
 		endPopup()
 	end
 
-	if imgui.BeginPopupModal("input: incompatible mods", nil, popupFlags) then
-		imgui.TextUnformatted("You have incompatible mods!\n\n" .. self.popupData.problems ..
-				"\n\nYou should resolve these issues before continuing.")
-		imgui.Separator()
-
-		if imgui.Button("Stay in mod menu") then
-			imgui.CloseCurrentPopup()
-		end
-
-		imgui.SameLine()
-		if imgui.Button("Continue anyway") then
-			imgui.CloseCurrentPopup()
-			st:loadMainMenu()
-		end
-
-		imgui.SameLine()
-		if imgui.Button("Close Beatblock") then
-			love.event.quit()
-		end
-
-		imgui.SetItemDefaultFocus()
-		imgui.EndPopup()
-	end
-
 	imgui.End()
 	if appliedBBPTheme then
 		bbp.gui.popStyle()
